@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# React Repo X-Ray 🔮
 
-## Getting Started
+A stunning 3D visualization tool that transforms React repositories into interactive cyberpunk constellations.
 
-First, run the development server:
+![React Repo X-Ray](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
+![Three.js](https://img.shields.io/badge/Three.js-R3F-purple?style=for-the-badge&logo=three.js)
+
+## ✨ Features
+
+- 🌌 **3D Force-Directed Graph**: Visualize your codebase as a floating hologram in space
+- 🎨 **Cyberpunk Aesthetic**: Deep black backgrounds with neon purple/cyan accents
+- 🔍 **Smart Code Analysis**: Automatically detects components, hooks, and utilities
+- 💫 **Animated Particles**: Watch data flow through your dependency graph
+- 🪟 **Glassmorphism UI**: Translucent panels with blur effects throughout
+- 📊 **Interactive Details**: Click nodes to see code, stats, and metadata
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Optional: GitHub Token
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For higher API rate limits, add a GitHub token:
 
-## Learn More
+```bash
+# Create .env.local
+GITHUB_TOKEN=your_github_token_here
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🎮 How to Use
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Enter a GitHub URL** on the landing page (e.g., `facebook/react`)
+2. **Wait for analysis** - the tool fetches and analyzes all React files
+3. **Explore the 3D graph**:
+   - 🔵 Blue spheres = Components
+   - 🔴 Red spheres = Hooks
+   - 🟢 Green spheres = Utils
+   - Larger spheres = More connections
+4. **Hover over nodes** to see tooltips
+5. **Click nodes** to view detailed information and code
+6. **Navigate** using mouse/trackpad to rotate and zoom
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Tech Stack
 
-## Deploy on Vercel
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **3D Graphics**: React Three Fiber, React Three Drei, Three.js
+- **API**: Octokit (GitHub REST API)
+- **Icons**: Lucide React
+- **Syntax Highlighting**: react-syntax-highlighter
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+data-flow-analyser/
+├── app/
+│   ├── globals.css          # Cyberpunk theme
+│   └── page.tsx              # Main dashboard
+├── components/
+│   ├── 3d/                   # Three.js components
+│   │   ├── ForceGraph.tsx
+│   │   ├── GraphNode.tsx
+│   │   └── GraphLink.tsx
+│   └── ui/                   # UI components
+│       ├── LandingPage.tsx
+│       ├── ParticleField.tsx
+│       ├── FileTree.tsx
+│       └── ComponentDetail.tsx
+├── lib/
+│   ├── actions/              # Server actions
+│   │   └── fetchRepoData.ts
+│   └── utils/                # Utilities
+│       └── analyzeCode.ts
+└── types/
+    └── index.ts              # TypeScript types
+```
+
+## 🎨 Design Philosophy
+
+The application follows a **Cyberpunk Void** aesthetic:
+
+- **Colors**: Deep black (#050505) with neon purple (#bf00ff) and cyan (#00f3ff)
+- **Effects**: Glassmorphism, glow effects, particle systems
+- **Typography**: Clean, modern fonts with text shadows
+- **Animations**: Smooth transitions and floating elements
+
+## 🔧 How It Works
+
+1. **GitHub API Integration**: Fetches repository file tree using Octokit
+2. **Code Analysis**: Regex-based parsing to detect components, hooks, and dependencies
+3. **Graph Generation**: Builds nodes and links based on import/export relationships
+4. **Force-Directed Layout**: Positions nodes in 3D space using physics simulation
+5. **WebGL Rendering**: React Three Fiber renders the scene with animations
+
+## 🌟 Example Repositories to Try
+
+- `facebook/react`
+- `vercel/next.js`
+- `remix-run/react-router`
+- `chakra-ui/chakra-ui`
+- `mui/material-ui`
+
+## 📝 License
+
+MIT
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+## 🙏 Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/)
+- 3D graphics powered by [React Three Fiber](https://docs.pmnd.rs/react-three-fiber)
+- Icons from [Lucide](https://lucide.dev/)
+- GitHub API via [Octokit](https://github.com/octokit/octokit.js)
+
+---
+
+**Made with 💜 and ⚡ by the power of AI**
