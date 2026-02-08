@@ -2,10 +2,11 @@
 
 import { FileNode } from '@/types';
 import { File, Folder, ChevronRight, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
 
 interface FileTreeProps {
     files: FileNode[];
+    onFileClick?: (file: FileNode) => void;
 }
 
 interface TreeNode {
@@ -14,6 +15,9 @@ interface TreeNode {
     type: 'file' | 'directory';
     children: TreeNode[];
 }
+
+// Context to pass file click handler down
+const FileClickContext = createContext<((path: string) => void) | null>(null);
 
 function buildTree(files: FileNode[]): TreeNode[] {
     const root: TreeNode[] = [];
@@ -55,12 +59,22 @@ function buildTree(files: FileNode[]): TreeNode[] {
 function TreeItem({ node }: { node: TreeNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const hasChildren = node.children.length > 0;
+    const onFileClick = useContext(FileClickContext);
+
+    const handleClick = () => {
+        if (hasChildren) {
+            setIsOpen(!isOpen);
+        } else if (node.type === 'file' && onFileClick) {
+            onFileClick(node.path);
+        }
+    };
 
     return (
         <div>
             <div
-                className="flex items-center gap-2 px-3 py-2 hover:bg-neon-purple/10 cursor-pointer rounded transition-colors"
-                onClick={() => hasChildren && setIsOpen(!isOpen)}
+                className={`flex items-center gap-2 px-3 py-2 hover:bg-neon-purple/10 cursor-pointer rounded transition-colors ${node.type === 'file' ? 'hover:bg-neon-cyan/10' : ''
+                    }`}
+                onClick={handleClick}
             >
                 {hasChildren && (
                     <span className="text-neon-cyan">
@@ -89,28 +103,38 @@ function TreeItem({ node }: { node: TreeNode }) {
     );
 }
 
-export function FileTree({ files }: FileTreeProps) {
+export function FileTree({ files, onFileClick }: FileTreeProps) {
     const tree = buildTree(files);
 
+    const handleFileClick = (path: string) => {
+        if (onFileClick) {
+            const file = files.find(f => f.path === path);
+            if (file) {
+                onFileClick(file);
+            }
+        }
+    };
+
     return (
-        <div className="glass h-full rounded-lg flex flex-col">
-            <h2 className="text-neon-purple font-bold text-lg p-4 pb-2 text-glow-purple flex-shrink-0 border-b border-neon-purple/20">
-                File Explorer
-            </h2>
-            <div
-                className="flex-1 overflow-auto p-4 pt-2"
-                style={{
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#bf00ff #0a0a0a'
-                }}
-            >
-                <div className="min-w-max space-y-1">
-                    {tree.map((node) => (
-                        <TreeItem key={node.path} node={node} />
-                    ))}
+        <FileClickContext.Provider value={handleFileClick}>
+            <div className="glass h-full rounded-lg flex flex-col">
+                <h2 className="text-neon-purple font-bold text-lg p-4 pb-2 text-glow-purple flex-shrink-0 border-b border-neon-purple/20">
+                    File Explorer
+                </h2>
+                <div
+                    className="flex-1 overflow-auto p-4 pt-2"
+                    style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#bf00ff #0a0a0a'
+                    }}
+                >
+                    <div className="min-w-max space-y-1">
+                        {tree.map((node) => (
+                            <TreeItem key={node.path} node={node} />
+                        ))}
+                    </div>
                 </div>
             </div>
-        </div>
+        </FileClickContext.Provider>
     );
 }
-

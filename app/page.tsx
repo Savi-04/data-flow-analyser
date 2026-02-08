@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { LandingPage } from '@/components/ui/LandingPage';
 import { FileTree } from '@/components/ui/FileTree';
-import { ComponentDetail } from '@/components/ui/ComponentDetail';
+import { CodeViewerPane } from '@/components/ui/CodeViewerPane';
 import { DataFlowFilter } from '@/components/ui/DataFlowFilter';
 import { ComponentSearch } from '@/components/ui/ComponentSearch';
 import { ForceGraph } from '@/components/3d/ForceGraph';
@@ -20,6 +20,7 @@ export default function Home() {
   const [filteredNodeIds, setFilteredNodeIds] = useState<string[] | null>(null);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<ComponentNode | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [repoName, setRepoName] = useState<string>('');
@@ -74,6 +75,7 @@ export default function Home() {
     setGraphData(null);
     setFiles([]);
     setSelectedNode(null);
+    setSelectedFile(null);
     setError(null);
     setRepoName('');
     setStateVariables([]);
@@ -93,6 +95,28 @@ export default function Home() {
     if (!node) return undefined;
     const file = files.find(f => f.path === node.filePath);
     return file?.content;
+  };
+
+  // Handle node selection - also opens code viewer
+  const handleNodeSelect = (node: ComponentNode | null) => {
+    setSelectedNode(node);
+    if (node) {
+      const file = files.find(f => f.path === node.filePath);
+      if (file) {
+        setSelectedFile(file);
+      }
+    }
+  };
+
+  // Handle file click from tree
+  const handleFileClick = (file: FileNode) => {
+    setSelectedFile(file);
+  };
+
+  // Close code viewer
+  const handleCloseCodeViewer = () => {
+    setSelectedFile(null);
+    setSelectedNode(null);
   };
 
   // Show landing page if no data
@@ -187,12 +211,12 @@ export default function Home() {
       {/* Main Layout */}
       <div className="flex h-full pt-[73px]">
         {/* Left Sidebar - File Tree */}
-        <div className="w-80 h-full p-4 border-r border-neon-purple/20">
-          <FileTree files={files} />
+        <div className="w-80 h-full p-4 border-r border-neon-purple/20 flex-shrink-0">
+          <FileTree files={files} onFileClick={handleFileClick} />
         </div>
 
         {/* Center - 3D Graph */}
-        <div className="flex-1 h-full relative">
+        <div className="flex-1 h-full relative min-w-0">
           {graphData && (
             <ForceGraph
               data={graphData}
@@ -203,16 +227,13 @@ export default function Home() {
           )}
         </div>
 
-        {/* Right Sidebar - Component Detail */}
-        {selectedNode && (
-          <div className="w-96 h-full p-4 border-l border-neon-cyan/20">
-            <ComponentDetail
-              node={selectedNode}
-              onClose={() => setSelectedNode(null)}
-              fileContent={getFileContent(selectedNode)}
-            />
-          </div>
-        )}
+        {/* Right Sidebar - Resizable Code Viewer */}
+        <CodeViewerPane
+          fileName={selectedFile?.name || null}
+          filePath={selectedFile?.path || null}
+          content={selectedFile?.content || null}
+          onClose={handleCloseCodeViewer}
+        />
       </div>
 
       {/* Stats Footer */}

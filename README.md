@@ -134,4 +134,4 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 ---
 
-**Made with 💜 and ⚡ by the power of AI**
+
