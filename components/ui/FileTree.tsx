@@ -1,12 +1,13 @@
 'use client';
 
 import { FileNode } from '@/types';
-import { File, Folder, ChevronRight, ChevronDown } from 'lucide-react';
+import { File, Folder, ChevronRight, ChevronDown, PanelLeftClose } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 
 interface FileTreeProps {
     files: FileNode[];
     onFileClick?: (file: FileNode) => void;
+    onCollapse?: () => void;
 }
 
 interface TreeNode {
@@ -103,7 +104,7 @@ function TreeItem({ node }: { node: TreeNode }) {
     );
 }
 
-export function FileTree({ files, onFileClick }: FileTreeProps) {
+export function FileTree({ files, onFileClick, onCollapse }: FileTreeProps) {
     const tree = buildTree(files);
 
     const handleFileClick = (path: string) => {
@@ -118,9 +119,20 @@ export function FileTree({ files, onFileClick }: FileTreeProps) {
     return (
         <FileClickContext.Provider value={handleFileClick}>
             <div className="glass h-full rounded-lg flex flex-col">
-                <h2 className="text-neon-purple font-bold text-lg p-4 pb-2 text-glow-purple flex-shrink-0 border-b border-neon-purple/20">
-                    File Explorer
-                </h2>
+                <div className="flex items-center justify-between p-4 pb-2 border-b border-neon-purple/20 flex-shrink-0">
+                    <h2 className="text-neon-purple font-bold text-lg text-glow-purple">
+                        File Explorer
+                    </h2>
+                    {onCollapse && (
+                        <button
+                            onClick={onCollapse}
+                            className="p-1.5 hover:bg-neon-purple/20 rounded transition-colors"
+                            title="Collapse File Explorer"
+                        >
+                            <PanelLeftClose className="w-4 h-4 text-gray-400 hover:text-neon-purple" />
+                        </button>
+                    )}
+                </div>
                 <div
                     className="flex-1 overflow-auto p-4 pt-2"
                     style={{

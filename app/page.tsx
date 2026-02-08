@@ -11,7 +11,7 @@ import { fetchRepoData } from '@/lib/actions/fetchRepoData';
 import { getMockGraphData } from '@/lib/actions/getMockData';
 import { analyzeCode } from '@/lib/utils/analyzeCode';
 import { GraphData, ComponentNode, FileNode, StateVariable } from '@/types';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from 'lucide-react';
 
 export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -24,6 +24,8 @@ export default function Home() {
   const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [repoName, setRepoName] = useState<string>('');
+  const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(true);
+  const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(true);
 
   const handleAnalyze = async (url: string, token?: string) => {
     setIsAnalyzing(true);
@@ -40,11 +42,158 @@ export default function Home() {
           { name: 'isLoggedIn', setterName: 'setIsLoggedIn', sourceComponentId: 'src/App', sourceComponentName: 'App', consumers: ['src/components/Header', 'src/components/Footer'] },
         ]);
         setFiles([
-          { path: 'src/App.tsx', name: 'App.tsx', type: 'file', content: '// App component' },
-          { path: 'src/components/Header.tsx', name: 'Header.tsx', type: 'file', content: '// Header component' },
-          { path: 'src/components/Footer.tsx', name: 'Footer.tsx', type: 'file', content: '// Footer component' },
-          { path: 'src/hooks/useAuth.ts', name: 'useAuth.ts', type: 'file', content: '// useAuth hook' },
-          { path: 'src/utils/api.ts', name: 'api.ts', type: 'file', content: '// API utilities' },
+          {
+            path: 'src/App.tsx', name: 'App.tsx', type: 'file', content: `import React, { useState, useEffect } from 'react';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+
+export function App() {
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status on mount
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/status');
+      const data = await response.json();
+      setUser(data.user);
+      setIsLoggedIn(data.isAuthenticated);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setIsLoggedIn(false);
+  };
+
+  return (
+    <div className="app">
+      <Header user={user} isLoggedIn={isLoggedIn} onLogout={handleLogout} />
+      <main>
+        <h1>Welcome to Our App</h1>
+        {isLoggedIn ? (
+          <p>Hello, {user?.name}!</p>
+        ) : (
+          <p>Please log in to continue.</p>
+        )}
+      </main>
+      <Footer copyright="2024 My Company" />
+    </div>
+  );
+}
+
+export default App;` },
+          {
+            path: 'src/components/Header.tsx', name: 'Header.tsx', type: 'file', content: `import React from 'react';
+import { useAuth } from '../hooks/useAuth';
+
+interface HeaderProps {
+  user: User | null;
+  isLoggedIn: boolean;
+  onLogout: () => void;
+}
+
+export function Header({ user, isLoggedIn, onLogout }: HeaderProps) {
+  const { logout } = useAuth();
+
+  const handleLogoutClick = () => {
+    logout();
+    onLogout();
+  };
+
+  return (
+    <header className="header">
+      <nav>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+      </nav>
+      <div className="user-section">
+        {isLoggedIn ? (
+          <>
+            <span>Welcome, {user?.name}</span>
+            <button onClick={handleLogoutClick}>Logout</button>
+          </>
+        ) : (
+          <a href="/login">Login</a>
+        )}
+      </div>
+    </header>
+  );
+}` },
+          {
+            path: 'src/components/Footer.tsx', name: 'Footer.tsx', type: 'file', content: `import React from 'react';
+
+interface FooterProps {
+  copyright: string;
+}
+
+export function Footer({ copyright }: FooterProps) {
+  return (
+    <footer className="footer">
+      <p>&copy; {copyright}</p>
+      <nav>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+      </nav>
+    </footer>
+  );
+}` },
+          {
+            path: 'src/hooks/useAuth.ts', name: 'useAuth.ts', type: 'file', content: `import { useState, useEffect } from 'react';
+import { api, fetchUser, logout as apiLogout } from '../utils/api';
+
+export function useAuth() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  const loadUser = async () => {
+    try {
+      const userData = await fetchUser();
+      setUser(userData);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    await apiLogout();
+    setUser(null);
+  };
+
+  return { user, loading, logout, refetch: loadUser };
+}` },
+          {
+            path: 'src/utils/api.ts', name: 'api.ts', type: 'file', content: `const API_BASE = '/api';
+
+export const api = {
+  get: async (endpoint: string) => {
+    const response = await fetch(\`\${API_BASE}\${endpoint}\`);
+    return response.json();
+  },
+  post: async (endpoint: string, data: any) => {
+    const response = await fetch(\`\${API_BASE}\${endpoint}\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+};
+
+export const fetchUser = () => api.get('/user');
+export const logout = () => api.post('/auth/logout', {});` },
         ]);
         return;
       }
@@ -80,10 +229,6 @@ export default function Home() {
     setRepoName('');
     setStateVariables([]);
     setFilteredNodeIds(null);
-  };
-
-  const handleNodeSelect = (node: ComponentNode | null) => {
-    setSelectedNode(node);
   };
 
   const handleFilter = (nodeIds: string[] | null) => {
@@ -210,10 +355,29 @@ export default function Home() {
 
       {/* Main Layout */}
       <div className="flex h-full pt-[73px]">
-        {/* Left Sidebar - File Tree */}
-        <div className="w-80 h-full p-4 border-r border-neon-purple/20 flex-shrink-0">
-          <FileTree files={files} onFileClick={handleFileClick} />
-        </div>
+        {/* Left Sidebar - File Tree (Collapsible) */}
+        {isFileExplorerOpen ? (
+          <div className="w-80 h-full p-4 border-r border-neon-purple/20 flex-shrink-0 relative">
+            <button
+              onClick={() => setIsFileExplorerOpen(false)}
+              className="absolute top-2 right-2 p-1.5 hover:bg-neon-purple/20 rounded transition-colors z-10"
+              title="Collapse File Explorer"
+            >
+              <PanelLeftClose className="w-4 h-4 text-gray-400" />
+            </button>
+            <FileTree files={files} onFileClick={handleFileClick} />
+          </div>
+        ) : (
+          <div className="h-full flex-shrink-0 border-r border-neon-purple/20">
+            <button
+              onClick={() => setIsFileExplorerOpen(true)}
+              className="h-full w-10 flex items-center justify-center hover:bg-neon-purple/20 transition-colors"
+              title="Open File Explorer"
+            >
+              <PanelLeft className="w-4 h-4 text-neon-purple" />
+            </button>
+          </div>
+        )}
 
         {/* Center - 3D Graph */}
         <div className="flex-1 h-full relative min-w-0">
@@ -227,13 +391,25 @@ export default function Home() {
           )}
         </div>
 
-        {/* Right Sidebar - Resizable Code Viewer */}
-        <CodeViewerPane
-          fileName={selectedFile?.name || null}
-          filePath={selectedFile?.path || null}
-          content={selectedFile?.content || null}
-          onClose={handleCloseCodeViewer}
-        />
+        {/* Right Sidebar - Resizable Code Viewer (Collapsible) */}
+        {isCodeViewerOpen ? (
+          <CodeViewerPane
+            fileName={selectedFile?.name || null}
+            filePath={selectedFile?.path || null}
+            content={selectedFile?.content || null}
+            onClose={() => setIsCodeViewerOpen(false)}
+          />
+        ) : (
+          <div className="h-full flex-shrink-0 border-l border-neon-cyan/20">
+            <button
+              onClick={() => setIsCodeViewerOpen(true)}
+              className="h-full w-10 flex items-center justify-center hover:bg-neon-cyan/20 transition-colors"
+              title="Open Code Viewer"
+            >
+              <PanelRight className="w-4 h-4 text-neon-cyan" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stats Footer */}

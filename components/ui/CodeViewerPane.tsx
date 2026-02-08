@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, ChevronRight, ChevronLeft, File, Maximize2, Minimize2 } from 'lucide-react';
+import { X, File, Maximize2, Minimize2, PanelRightClose } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -14,7 +14,6 @@ interface CodeViewerPaneProps {
 
 export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeViewerPaneProps) {
     const [width, setWidth] = useState(500);
-    const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMaximized, setIsMaximized] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -80,76 +79,20 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
         };
     }, [isDragging]);
 
-    // Toggle collapse
-    const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
-        if (isMaximized) setIsMaximized(false);
-    };
-
     // Toggle maximize
     const toggleMaximize = () => {
         setIsMaximized(!isMaximized);
-        if (isCollapsed) setIsCollapsed(false);
     };
-
-    // If no content and collapsed, show minimal button
-    if (isCollapsed) {
-        return (
-            <div className="h-full flex items-center">
-                <button
-                    onClick={toggleCollapse}
-                    className="h-full w-8 flex items-center justify-center bg-black/50 border-l border-neon-cyan/20 hover:bg-neon-purple/20 transition-colors"
-                    title="Expand code viewer"
-                >
-                    <ChevronLeft className="w-4 h-4 text-neon-cyan" />
-                </button>
-            </div>
-        );
-    }
-
-    // If no file selected, show placeholder
-    if (!content || !fileName) {
-        return (
-            <div
-                ref={containerRef}
-                className="h-full flex flex-col border-l border-neon-cyan/20 bg-black/30"
-                style={{ width: isMaximized ? '60vw' : width }}
-            >
-                {/* Resize Handle */}
-                <div
-                    className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-neon-purple/50 transition-colors z-10"
-                    onMouseDown={handleMouseDown}
-                    style={{ backgroundColor: isDragging ? 'rgba(191, 0, 255, 0.5)' : 'transparent' }}
-                />
-
-                <div className="flex-1 flex items-center justify-center text-gray-500">
-                    <div className="text-center">
-                        <File className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                        <p>Click a file or component to view code</p>
-                    </div>
-                </div>
-
-                {/* Collapse button */}
-                <button
-                    onClick={toggleCollapse}
-                    className="absolute top-4 left-2 p-1 hover:bg-neon-purple/20 rounded transition-colors"
-                    title="Collapse"
-                >
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                </button>
-            </div>
-        );
-    }
 
     return (
         <div
             ref={containerRef}
-            className="h-full flex flex-col border-l border-neon-cyan/20 bg-black/30 relative"
+            className="h-full flex flex-col border-l border-neon-cyan/20 bg-black/30 relative flex-shrink-0"
             style={{ width: isMaximized ? '60vw' : width }}
         >
             {/* Resize Handle */}
             <div
-                className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-neon-purple/50 transition-colors z-10"
+                className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-neon-purple/50 transition-colors z-10"
                 onMouseDown={handleMouseDown}
                 style={{ backgroundColor: isDragging ? 'rgba(191, 0, 255, 0.5)' : 'transparent' }}
             />
@@ -159,14 +102,18 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
                 <div className="flex items-center gap-3 min-w-0">
                     <File className="w-4 h-4 text-neon-cyan flex-shrink-0" />
                     <div className="min-w-0">
-                        <h3 className="text-neon-cyan font-semibold truncate">{fileName}</h3>
-                        <p className="text-gray-500 text-xs truncate">{filePath}</p>
+                        <h3 className="text-neon-cyan font-semibold truncate">
+                            {fileName || 'Code Viewer'}
+                        </h3>
+                        <p className="text-gray-500 text-xs truncate">
+                            {filePath || 'Click a file or component'}
+                        </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                         onClick={toggleMaximize}
-                        className="p-1 hover:bg-neon-purple/20 rounded transition-colors"
+                        className="p-1.5 hover:bg-neon-purple/20 rounded transition-colors"
                         title={isMaximized ? "Restore" : "Maximize"}
                     >
                         {isMaximized ? (
@@ -176,18 +123,11 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
                         )}
                     </button>
                     <button
-                        onClick={toggleCollapse}
-                        className="p-1 hover:bg-neon-purple/20 rounded transition-colors"
-                        title="Collapse"
-                    >
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button
                         onClick={onClose}
-                        className="p-1 hover:bg-red-500/20 rounded transition-colors"
-                        title="Close"
+                        className="p-1.5 hover:bg-red-500/20 rounded transition-colors"
+                        title="Close Code Viewer"
                     >
-                        <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                        <PanelRightClose className="w-4 h-4 text-gray-400 hover:text-red-400" />
                     </button>
                 </div>
             </div>
@@ -200,28 +140,37 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
                     scrollbarColor: '#bf00ff #0a0a0a'
                 }}
             >
-                <SyntaxHighlighter
-                    language={getLanguage(filePath)}
-                    style={vscDarkPlus}
-                    customStyle={{
-                        margin: 0,
-                        padding: '1rem',
-                        background: 'transparent',
-                        fontSize: '13px',
-                        lineHeight: '1.5',
-                        minHeight: '100%',
-                    }}
-                    showLineNumbers
-                    lineNumberStyle={{
-                        minWidth: '3em',
-                        paddingRight: '1em',
-                        color: '#4a5568',
-                        userSelect: 'none',
-                    }}
-                    wrapLines
-                >
-                    {content}
-                </SyntaxHighlighter>
+                {content ? (
+                    <SyntaxHighlighter
+                        language={getLanguage(filePath)}
+                        style={vscDarkPlus}
+                        customStyle={{
+                            margin: 0,
+                            padding: '1rem',
+                            background: 'transparent',
+                            fontSize: '13px',
+                            lineHeight: '1.5',
+                            minHeight: '100%',
+                        }}
+                        showLineNumbers
+                        lineNumberStyle={{
+                            minWidth: '3em',
+                            paddingRight: '1em',
+                            color: '#4a5568',
+                            userSelect: 'none',
+                        }}
+                        wrapLines
+                    >
+                        {content}
+                    </SyntaxHighlighter>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-gray-500 h-full">
+                        <div className="text-center p-8">
+                            <File className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                            <p>Click a file or component to view code</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
