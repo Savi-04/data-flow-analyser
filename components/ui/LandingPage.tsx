@@ -34,7 +34,7 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                 <div className="text-center mb-20">
                     {/* Badge */}
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-purple/10 border border-neon-purple/30 mb-8">
-                        <Sparkles className="w-4 h-4 text-neon-purple" />
+                        <Sparkles className="w-5 h-5 text-neon-purple" />
                         <span className="text-sm font-medium text-neon-purple">3D Code Visualization</span>
                     </div>
 
@@ -65,7 +65,7 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                             {/* URL Input */}
                             <div className="flex items-center gap-4 bg-black/30 rounded-2xl p-4 mb-6">
                                 <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center border border-neon-purple/30">
-                                    <Github className="text-neon-purple w-5 h-5" />
+                                    <Github className="text-neon-purple w-6 h-6" />
                                 </div>
                                 <input
                                     type="text"
@@ -81,7 +81,14 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                             <button
                                 type="submit"
                                 disabled={isLoading || !url.trim()}
-                                className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan px-8 py-4 rounded-2xl font-bold text-black hover:opacity-90 transition-all disabled:from-neon-purple/50 disabled:to-neon-cyan/50 disabled:text-white/70 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg shadow-lg shadow-neon-purple/30 border-2 border-transparent disabled:border-neon-purple/50"
+                                className="w-full px-8 py-4 rounded-2xl font-bold hover:opacity-90 transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg shadow-lg shadow-neon-purple/30"
+                                style={{
+                                    background: (isLoading || !url.trim())
+                                        ? 'linear-gradient(to right, rgba(191, 0, 255, 0.4), rgba(0, 243, 255, 0.4))'
+                                        : 'linear-gradient(to right, #bf00ff, #00f3ff)',
+                                    color: (isLoading || !url.trim()) ? 'rgba(255,255,255,0.7)' : '#000',
+                                    border: (isLoading || !url.trim()) ? '2px solid rgba(191, 0, 255, 0.5)' : '2px solid transparent',
+                                }}
                             >
                                 {isLoading ? (
                                     <>
@@ -90,7 +97,7 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                                     </>
                                 ) : (
                                     <>
-                                        <Search className="w-5 h-5" />
+                                        <Search className="w-6 h-6" />
                                         <span>Analyze Repository</span>
                                     </>
                                 )}
@@ -104,13 +111,13 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                                     className="flex items-center gap-2 text-gray-500 hover:text-neon-cyan transition-colors text-sm font-medium"
                                 >
                                     {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    <Lock size={14} />
+                                    <Lock size={18} />
                                     <span>Private Repository Access</span>
                                 </button>
 
                                 {showAdvanced && (
                                     <div className="mt-6 flex items-center gap-4 bg-black/30 rounded-xl p-4">
-                                        <Key className="text-neon-cyan w-5 h-5 flex-shrink-0" />
+                                        <Key className="text-neon-cyan w-6 h-6 flex-shrink-0" />
                                         <input
                                             type="password"
                                             value={token}
@@ -135,7 +142,7 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                             className="group relative px-6 py-3 rounded-2xl bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/30 hover:border-neon-cyan/60 transition-all"
                         >
                             <span className="flex items-center gap-2 text-neon-cyan font-semibold">
-                                <Zap className="w-4 h-4" />
+                                <Zap className="w-5 h-5" />
                                 Demo Mode
                             </span>
                         </button>
@@ -161,26 +168,26 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                             icon: <Search className="w-6 h-6" />,
                             title: 'Deep Analysis',
                             desc: 'Scans all React components, hooks, and utilities',
-                            color: 'neon-purple'
+                            iconClass: 'bg-neon-purple/10 text-neon-purple'
                         },
                         {
                             icon: <Sparkles className="w-6 h-6" />,
                             title: '3D Visualization',
                             desc: 'Interactive force-directed graph in 3D space',
-                            color: 'neon-cyan'
+                            iconClass: 'bg-neon-cyan/10 text-neon-cyan'
                         },
                         {
                             icon: <Lock className="w-6 h-6" />,
                             title: 'Private Repos',
                             desc: 'Secure access with GitHub personal token',
-                            color: 'pink-500'
+                            iconClass: 'bg-pink-500/10 text-pink-500'
                         },
                     ].map((feature) => (
                         <div
                             key={feature.title}
                             className="group p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/20 hover:bg-white/[0.05] transition-all duration-300"
                         >
-                            <div className={`w-12 h-12 rounded-xl bg-${feature.color}/10 flex items-center justify-center mb-5 text-${feature.color} group-hover:scale-110 transition-transform`}>
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform ${feature.iconClass}`}>
                                 {feature.icon}
                             </div>
                             <h3 className="text-white font-semibold text-lg mb-2">{feature.title}</h3>
