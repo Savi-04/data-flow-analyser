@@ -134,6 +134,11 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                     dampingFactor={0.05}
                     rotateSpeed={0.5}
                     zoomSpeed={0.8}
+                    mouseButtons={{
+                        LEFT: 0,   // Rotate
+                        MIDDLE: 1, // Dolly (zoom)
+                        RIGHT: 2,  // Pan
+                    }}
                 />
 
                 {/* Enhanced Lighting */}

@@ -14,11 +14,14 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
     const [isOpen, setIsOpen] = useState(false);
 
     const filteredNodes = useMemo(() => {
-        if (!query.trim()) return [];
+        // Show all nodes when query is empty, otherwise filter
+        if (!query.trim()) {
+            return nodes.slice(0, 15); // Show up to 15 components when empty
+        }
         const lowerQuery = query.toLowerCase();
         return nodes.filter(node =>
             node.name.toLowerCase().includes(lowerQuery)
-        ).slice(0, 8); // Limit suggestions
+        ).slice(0, 15); // Limit suggestions
     }, [nodes, query]);
 
     const handleSelect = (nodeId: string) => {
@@ -57,7 +60,7 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
 
             {/* Dropdown suggestions */}
             {isOpen && filteredNodes.length > 0 && (
-                <div className="absolute top-full mt-1 left-0 right-0 bg-black/90 backdrop-blur-md border border-neon-purple/30 rounded-lg overflow-hidden z-50">
+                <div className="absolute top-full mt-1 left-0 right-0 bg-black/90 backdrop-blur-md border border-neon-purple/30 rounded-lg overflow-hidden z-50 max-h-64 overflow-y-auto">
                     {filteredNodes.map(node => (
                         <button
                             key={node.id}

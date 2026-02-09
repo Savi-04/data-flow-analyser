@@ -377,7 +377,7 @@ export const logout = () => api.post('/auth/logout', {});` },
         )}
 
         {/* Center - 3D Graph */}
-        <div className="flex-1 h-full relative min-w-0">
+        <div className="flex-1 h-full relative min-w-0 overflow-auto">
           {graphData && (
             <ForceGraph
               data={graphData}
