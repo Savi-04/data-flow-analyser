@@ -353,22 +353,19 @@ export const logout = () => api.post('/auth/logout', {});` },
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="flex h-full pt-[73px]">
+      {/* Main Layout - Fixed to account for navbar */}
+      <div className="absolute inset-0 top-[73px] flex">
         {/* Left Sidebar - File Tree (Collapsible) */}
         {isFileExplorerOpen ? (
-          <div className="w-80 h-full p-4 border-r border-neon-purple/20 flex-shrink-0 relative">
-            <button
-              onClick={() => setIsFileExplorerOpen(false)}
-              className="absolute top-2 right-2 p-1.5 hover:bg-neon-purple/20 rounded transition-colors z-10"
-              title="Collapse File Explorer"
-            >
-              <PanelLeftClose className="w-4 h-4 text-gray-400" />
-            </button>
-            <FileTree files={files} onFileClick={handleFileClick} />
+          <div className="w-80 h-full p-2 border-r border-neon-purple/20 flex-shrink-0">
+            <FileTree
+              files={files}
+              onFileClick={handleFileClick}
+              onCollapse={() => setIsFileExplorerOpen(false)}
+            />
           </div>
         ) : (
-          <div className="h-full flex-shrink-0 border-r border-neon-purple/20">
+          <div className="h-full flex-shrink-0 border-r border-neon-purple/20 bg-black/30">
             <button
               onClick={() => setIsFileExplorerOpen(true)}
               className="h-full w-10 flex items-center justify-center hover:bg-neon-purple/20 transition-colors"
@@ -400,7 +397,7 @@ export const logout = () => api.post('/auth/logout', {});` },
             onClose={() => setIsCodeViewerOpen(false)}
           />
         ) : (
-          <div className="h-full flex-shrink-0 border-l border-neon-cyan/20">
+          <div className="h-full flex-shrink-0 border-l border-neon-cyan/20 bg-black/30">
             <button
               onClick={() => setIsCodeViewerOpen(true)}
               className="h-full w-10 flex items-center justify-center hover:bg-neon-cyan/20 transition-colors"

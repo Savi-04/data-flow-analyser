@@ -124,10 +124,10 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
                     </button>
                     <button
                         onClick={onClose}
-                        className="p-1.5 hover:bg-red-500/20 rounded transition-colors"
+                        className="p-2 bg-neon-cyan/20 hover:bg-red-500/30 rounded-md transition-colors border border-neon-cyan/30"
                         title="Close Code Viewer"
                     >
-                        <PanelRightClose className="w-4 h-4 text-gray-400 hover:text-red-400" />
+                        <PanelRightClose className="w-5 h-5 text-neon-cyan hover:text-red-400" />
                     </button>
                 </div>
             </div>

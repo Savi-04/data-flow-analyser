@@ -118,29 +118,31 @@ export function FileTree({ files, onFileClick, onCollapse }: FileTreeProps) {
 
     return (
         <FileClickContext.Provider value={handleFileClick}>
-            <div className="glass h-full rounded-lg flex flex-col">
-                <div className="flex items-center justify-between p-4 pb-2 border-b border-neon-purple/20 flex-shrink-0">
-                    <h2 className="text-neon-purple font-bold text-lg text-glow-purple">
+            <div className="h-full rounded-lg flex flex-col bg-black/40 backdrop-blur-md border border-neon-purple/20">
+                {/* Fixed Header - Always Visible */}
+                <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-neon-purple/30 bg-black/60">
+                    <h2 className="text-neon-purple font-bold text-base text-glow-purple">
                         File Explorer
                     </h2>
                     {onCollapse && (
                         <button
                             onClick={onCollapse}
-                            className="p-1.5 hover:bg-neon-purple/20 rounded transition-colors"
+                            className="p-2 bg-neon-purple/20 hover:bg-neon-purple/40 rounded-md transition-colors border border-neon-purple/40"
                             title="Collapse File Explorer"
                         >
-                            <PanelLeftClose className="w-4 h-4 text-gray-400 hover:text-neon-purple" />
+                            <PanelLeftClose className="w-5 h-5 text-neon-purple" />
                         </button>
                     )}
                 </div>
+                {/* Scrollable Content */}
                 <div
-                    className="flex-1 overflow-auto p-4 pt-2"
+                    className="flex-1 overflow-auto px-3 py-2 min-h-0"
                     style={{
                         scrollbarWidth: 'thin',
                         scrollbarColor: '#bf00ff #0a0a0a'
                     }}
                 >
-                    <div className="min-w-max space-y-1">
+                    <div className="min-w-max space-y-0.5">
                         {tree.map((node) => (
                             <TreeItem key={node.path} node={node} />
                         ))}
