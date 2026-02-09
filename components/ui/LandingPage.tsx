@@ -49,7 +49,7 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                     </h1>
 
                     {/* Subtitle */}
-                    <p className="text-xl md:text-2xl text-gray-400 font-light max-w-xl mx-auto leading-relaxed">
+                    <p className="text-xl md:text-2xl text-gray-400 font-light max-w-xl leading-relaxed text-center" style={{ margin: 'auto' }}>
                         Transform your React codebase into an
                         <span className="text-neon-cyan font-medium"> interactive 3D constellation</span>
                     </p>
@@ -81,7 +81,7 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                             <button
                                 type="submit"
                                 disabled={isLoading || !url.trim()}
-                                className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan px-8 py-4 rounded-2xl font-bold text-black hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg shadow-lg shadow-neon-purple/30"
+                                className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan px-8 py-4 rounded-2xl font-bold text-black hover:opacity-90 transition-all disabled:from-neon-purple/50 disabled:to-neon-cyan/50 disabled:text-white/70 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg shadow-lg shadow-neon-purple/30 border-2 border-transparent disabled:border-neon-purple/50"
                             >
                                 {isLoading ? (
                                     <>
