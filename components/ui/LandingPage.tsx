@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Github, Key, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Github, Key, ChevronDown, ChevronUp, Sparkles, Zap, Lock } from 'lucide-react';
 import { ParticleField } from './ParticleField';
 
 interface LandingPageProps {
@@ -24,129 +24,176 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
     };
 
     return (
-        <div className="relative w-full h-screen flex items-center justify-center overflow-hidden">
+        <div className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden py-16">
             <ParticleField />
 
-            <div className="relative z-10 w-full max-w-2xl px-6">
-                {/* Title */}
-                <div className="text-center mb-16">
-                    <h1 className="text-7xl font-extrabold mb-6 text-glow-purple tracking-tight">
-                        <span className="bg-gradient-to-r from-neon-purple via-pink-500 to-neon-cyan bg-clip-text text-transparent">
-                            React Repo X-Ray
+            {/* Main Content Container */}
+            <div className="relative z-10 w-full max-w-3xl px-8">
+
+                {/* Hero Section */}
+                <div className="text-center mb-20">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-purple/10 border border-neon-purple/30 mb-8">
+                        <Sparkles className="w-4 h-4 text-neon-purple" />
+                        <span className="text-sm font-medium text-neon-purple">3D Code Visualization</span>
+                    </div>
+
+                    {/* Main Title */}
+                    <h1 className="text-6xl md:text-7xl font-black mb-8 leading-tight">
+                        <span className="block bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
+                            React Repo
+                        </span>
+                        <span className="block bg-gradient-to-r from-neon-purple via-pink-500 to-neon-cyan bg-clip-text text-transparent text-glow-purple">
+                            X-Ray
                         </span>
                     </h1>
-                    <p className="text-gray-300 text-xl font-light tracking-wide">
-                        Visualize your React codebase as a 3D constellation
+
+                    {/* Subtitle */}
+                    <p className="text-xl md:text-2xl text-gray-400 font-light max-w-xl mx-auto leading-relaxed">
+                        Transform your React codebase into an
+                        <span className="text-neon-cyan font-medium"> interactive 3D constellation</span>
                     </p>
                 </div>
 
-                {/* Input Form */}
-                <form onSubmit={handleSubmit} className="relative">
-                    <div className="glass rounded-2xl p-10 animate-glow">
-                        {/* URL Input */}
-                        <div className="flex items-center gap-4">
-                            <Github className="text-neon-purple w-7 h-7" />
-                            <input
-                                type="text"
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                placeholder="Enter GitHub repository URL..."
-                                className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none text-xl font-light tracking-wide"
-                                disabled={isLoading}
-                            />
+                {/* Search Card */}
+                <div className="relative mb-16">
+                    {/* Glow effect behind card */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 blur-3xl rounded-3xl" />
+
+                    <form onSubmit={handleSubmit} className="relative">
+                        <div className="glass rounded-3xl p-8 md:p-10 border border-white/10 shadow-2xl">
+                            {/* URL Input */}
+                            <div className="flex items-center gap-4 bg-black/30 rounded-2xl p-4 mb-6">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center border border-neon-purple/30">
+                                    <Github className="text-neon-purple w-5 h-5" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={url}
+                                    onChange={(e) => setUrl(e.target.value)}
+                                    placeholder="Paste GitHub repository URL..."
+                                    className="flex-1 bg-transparent text-white text-lg placeholder-gray-500 outline-none font-light min-w-0"
+                                    disabled={isLoading}
+                                />
+                            </div>
+
+                            {/* Analyze Button - Full Width */}
                             <button
                                 type="submit"
                                 disabled={isLoading || !url.trim()}
-                                className="glass-cyan px-8 py-4 rounded-xl font-semibold text-neon-cyan hover:bg-neon-cyan/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-lg"
+                                className="w-full bg-gradient-to-r from-neon-purple to-neon-cyan px-8 py-4 rounded-2xl font-bold text-black hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg shadow-lg shadow-neon-purple/30"
                             >
                                 {isLoading ? (
                                     <>
-                                        <div className="w-5 h-5 border-2 border-neon-cyan border-t-transparent rounded-full animate-spin" />
-                                        Analyzing...
+                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                        <span>Analyzing Repository...</span>
                                     </>
                                 ) : (
                                     <>
                                         <Search className="w-5 h-5" />
-                                        Analyze
+                                        <span>Analyze Repository</span>
                                     </>
                                 )}
                             </button>
-                        </div>
 
-                        {/* Advanced Options Toggle */}
-                        <button
-                            type="button"
-                            onClick={() => setShowAdvanced(!showAdvanced)}
-                            className="flex items-center gap-2 text-gray-500 hover:text-neon-cyan transition-colors mt-6 text-sm font-medium tracking-wide"
-                        >
-                            {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            Advanced Options (Private Repos)
-                        </button>
+                            {/* Advanced Options */}
+                            <div className="mt-8 pt-6 border-t border-white/5">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdvanced(!showAdvanced)}
+                                    className="flex items-center gap-2 text-gray-500 hover:text-neon-cyan transition-colors text-sm font-medium"
+                                >
+                                    {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                    <Lock size={14} />
+                                    <span>Private Repository Access</span>
+                                </button>
 
-                        {/* Token Input (Collapsible) */}
-                        {showAdvanced && (
-                            <div className="mt-6 pt-6 border-t border-neon-purple/20">
-                                <div className="flex items-center gap-4">
-                                    <Key className="text-neon-cyan w-5 h-5" />
-                                    <input
-                                        type="password"
-                                        value={token}
-                                        onChange={(e) => setToken(e.target.value)}
-                                        placeholder="GitHub Personal Access Token (optional)"
-                                        className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none text-base font-light"
-                                        disabled={isLoading}
-                                    />
-                                </div>
-                                <p className="text-gray-600 text-sm mt-3 ml-9 font-light">
-                                    🔒 Required for private repos. Token is not stored.
-                                </p>
+                                {showAdvanced && (
+                                    <div className="mt-6 flex items-center gap-4 bg-black/30 rounded-xl p-4">
+                                        <Key className="text-neon-cyan w-5 h-5 flex-shrink-0" />
+                                        <input
+                                            type="password"
+                                            value={token}
+                                            onChange={(e) => setToken(e.target.value)}
+                                            placeholder="GitHub Personal Access Token"
+                                            className="flex-1 bg-transparent text-white placeholder-gray-600 outline-none text-base"
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                </form>
+                        </div>
+                    </form>
+                </div>
 
-                {/* Example URLs */}
-                <div className="mt-12 text-center">
-                    <p className="text-gray-400 text-base mb-4 font-light tracking-wide">Try these examples:</p>
+                {/* Quick Start Section */}
+                <div className="text-center mb-20">
+                    <p className="text-gray-500 text-sm uppercase tracking-widest mb-6 font-medium">Quick Start</p>
                     <div className="flex flex-wrap justify-center gap-4">
                         <button
                             onClick={() => setUrl('demo')}
-                            className="glass-cyan px-5 py-3 rounded-xl text-base text-neon-cyan hover:bg-neon-cyan/10 transition-all font-semibold tracking-wide"
+                            className="group relative px-6 py-3 rounded-2xl bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/30 hover:border-neon-cyan/60 transition-all"
                         >
-                            🎮 Demo Mode
+                            <span className="flex items-center gap-2 text-neon-cyan font-semibold">
+                                <Zap className="w-4 h-4" />
+                                Demo Mode
+                            </span>
                         </button>
                         {[
-                            'facebook/react',
-                            'vercel/next.js',
-                            'remix-run/react-router',
+                            { name: 'facebook/react', label: 'React' },
+                            { name: 'vercel/next.js', label: 'Next.js' },
                         ].map((example) => (
                             <button
-                                key={example}
-                                onClick={() => setUrl(`https://github.com/${example}`)}
-                                className="glass px-5 py-3 rounded-xl text-base text-neon-purple hover:bg-neon-purple/10 transition-all font-medium"
+                                key={example.name}
+                                onClick={() => setUrl(`https://github.com/${example.name}`)}
+                                className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-neon-purple/50 hover:bg-white/10 transition-all text-gray-300 hover:text-white font-medium"
                             >
-                                {example}
+                                {example.label}
                             </button>
                         ))}
                     </div>
-                    <p className="text-gray-500 text-sm mt-4 font-light">
-                        💡 Tip: Type "demo" to see a sample visualization
-                    </p>
                 </div>
 
-                {/* Features */}
-                <div className="mt-20 grid grid-cols-3 gap-8">
+                {/* Features Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
-                        { icon: '🔍', title: 'Deep Analysis', desc: 'Scans all React files' },
-                        { icon: '🌌', title: '3D Visualization', desc: 'Interactive graph' },
-                        { icon: '🔐', title: 'Private Repos', desc: 'With GitHub token' },
+                        {
+                            icon: <Search className="w-6 h-6" />,
+                            title: 'Deep Analysis',
+                            desc: 'Scans all React components, hooks, and utilities',
+                            color: 'neon-purple'
+                        },
+                        {
+                            icon: <Sparkles className="w-6 h-6" />,
+                            title: '3D Visualization',
+                            desc: 'Interactive force-directed graph in 3D space',
+                            color: 'neon-cyan'
+                        },
+                        {
+                            icon: <Lock className="w-6 h-6" />,
+                            title: 'Private Repos',
+                            desc: 'Secure access with GitHub personal token',
+                            color: 'pink-500'
+                        },
                     ].map((feature) => (
-                        <div key={feature.title} className="glass p-6 rounded-xl text-center">
-                            <div className="text-4xl mb-3">{feature.icon}</div>
-                            <h3 className="text-neon-cyan font-semibold text-lg mb-2">{feature.title}</h3>
-                            <p className="text-gray-400 text-sm font-light">{feature.desc}</p>
+                        <div
+                            key={feature.title}
+                            className="group p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/20 hover:bg-white/[0.05] transition-all duration-300"
+                        >
+                            <div className={`w-12 h-12 rounded-xl bg-${feature.color}/10 flex items-center justify-center mb-5 text-${feature.color} group-hover:scale-110 transition-transform`}>
+                                {feature.icon}
+                            </div>
+                            <h3 className="text-white font-semibold text-lg mb-2">{feature.title}</h3>
+                            <p className="text-gray-500 text-sm leading-relaxed">{feature.desc}</p>
                         </div>
                     ))}
+                </div>
+
+                {/* Footer hint */}
+                <div className="mt-16 text-center">
+                    <p className="text-gray-600 text-sm">
+                        💡 Type <code className="text-neon-cyan bg-neon-cyan/10 px-2 py-1 rounded">demo</code> to explore with sample data
+                    </p>
                 </div>
             </div>
         </div>
