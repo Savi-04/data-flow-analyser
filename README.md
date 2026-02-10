@@ -1,6 +1,6 @@
 # React Repo X-Ray 🔮
 
-A stunning 3D visualization tool that transforms React repositories into interactive cyberpunk constellations.
+A stunning 3D Makbool visualization tool that transforms React repositories into interactive cyberpunk constellations.
 
 ![React Repo X-Ray](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
