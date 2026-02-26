@@ -138,7 +138,10 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                     <p className="text-gray-500 text-sm uppercase tracking-widest mb-6 font-medium">Quick Start</p>
                     <div className="flex flex-wrap justify-center gap-4">
                         <button
-                            onClick={() => setUrl('demo')}
+                            onClick={() => {
+                                setUrl('demo');
+                                onSubmit('demo', token || undefined);
+                            }}
                             className="group relative px-6 py-3 rounded-2xl bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/30 hover:border-neon-cyan/60 transition-all"
                         >
                             <span className="flex items-center gap-2 text-neon-cyan font-semibold">
@@ -152,7 +155,11 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                         ].map((example) => (
                             <button
                                 key={example.name}
-                                onClick={() => setUrl(`https://github.com/${example.name}`)}
+                                onClick={() => {
+                                    const repoUrl = `https://github.com/${example.name}`;
+                                    setUrl(repoUrl);
+                                    onSubmit(repoUrl, token || undefined);
+                                }}
                                 className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-neon-purple/50 hover:bg-white/10 transition-all text-gray-300 hover:text-white font-medium"
                             >
                                 {example.label}

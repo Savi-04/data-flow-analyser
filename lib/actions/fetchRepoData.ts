@@ -17,7 +17,7 @@ const MAX_DEPTH = 10;
 /**
  * Parse GitHub URL to extract owner, repo, branch, and path
  */
-function parseGitHubUrl(url: string): { owner: string; repo: string; ref?: string; path?: string } | null {
+export function parseGitHubUrl(url: string): { owner: string; repo: string; ref?: string; path?: string } | null {
     // Remove trailing slash
     url = url.replace(/\/$/, '');
 
