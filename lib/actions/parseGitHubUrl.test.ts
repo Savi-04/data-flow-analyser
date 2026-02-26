@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseGitHubUrl } from './fetchRepoData';
+import { parseGitHubUrl } from '@/lib/utils/parseGitHubUrl';
 
 describe('parseGitHubUrl', () => {
     // ─── Simple "owner/repo" Format ───────────────────────────────────────

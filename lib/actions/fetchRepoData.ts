@@ -2,6 +2,7 @@
 
 import { Octokit } from 'octokit';
 import { FileNode, RepoData } from '@/types';
+import { parseGitHubUrl } from '@/lib/utils/parseGitHubUrl';
 
 // Create Octokit instance with optional token
 function createOctokit(token?: string) {
@@ -13,38 +14,6 @@ function createOctokit(token?: string) {
 // Limits to prevent timeouts
 const MAX_FILES = 200;
 const MAX_DEPTH = 10;
-
-/**
- * Parse GitHub URL to extract owner, repo, branch, and path
- */
-export function parseGitHubUrl(url: string): { owner: string; repo: string; ref?: string; path?: string } | null {
-    // Remove trailing slash
-    url = url.replace(/\/$/, '');
-
-    // Handle simple "owner/repo" format
-    const simpleMatch = url.match(/^([^\/]+)\/([^\/]+)$/);
-    if (simpleMatch) {
-        return {
-            owner: simpleMatch[1],
-            repo: simpleMatch[2].replace(/\.git$/, ''),
-        };
-    }
-
-    // Handle full GitHub URLs
-    // Matches: github.com/owner/repo/tree/branch/path
-    const urlMatch = url.match(/github\.com\/([^\/]+)\/([^\/]+)(?:\/tree\/([^\/]+)(?:\/(.*))?)?/);
-
-    if (urlMatch) {
-        return {
-            owner: urlMatch[1],
-            repo: urlMatch[2].replace(/\.git$/, ''),
-            ref: urlMatch[3], // Branch name (optional)
-            path: urlMatch[4], // Subdirectory path (optional)
-        };
-    }
-
-    return null;
-}
 
 /**
  * Fetch file tree recursively from GitHub
