@@ -5,7 +5,7 @@ import { Search, Github, Key, ChevronDown, ChevronUp, Sparkles, Zap, Lock } from
 import { ParticleField } from './ParticleField';
 
 interface LandingPageProps {
-    onSubmit: (url: string, token?: string) => void;
+    onSubmit: (url: string, token?: string) => Promise<void> | void;
 }
 
 export function LandingPage({ onSubmit }: LandingPageProps) {
@@ -19,8 +19,21 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
         if (!url.trim()) return;
 
         setIsLoading(true);
-        await onSubmit(url, token || undefined);
-        setIsLoading(false);
+        try {
+            await onSubmit(url, token || undefined);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleQuickStart = async (repoUrl: string) => {
+        setUrl(repoUrl);
+        setIsLoading(true);
+        try {
+            await onSubmit(repoUrl, token || undefined);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -138,11 +151,9 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                     <p className="text-gray-500 text-sm uppercase tracking-widest mb-6 font-medium">Quick Start</p>
                     <div className="flex flex-wrap justify-center gap-4">
                         <button
-                            onClick={() => {
-                                setUrl('demo');
-                                onSubmit('demo', token || undefined);
-                            }}
-                            className="group relative px-6 py-3 rounded-2xl bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/30 hover:border-neon-cyan/60 transition-all"
+                            onClick={() => handleQuickStart('demo')}
+                            disabled={isLoading}
+                            className="group relative px-6 py-3 rounded-2xl bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/30 hover:border-neon-cyan/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <span className="flex items-center gap-2 text-neon-cyan font-semibold">
                                 <Zap className="w-5 h-5" />
@@ -155,12 +166,9 @@ export function LandingPage({ onSubmit }: LandingPageProps) {
                         ].map((example) => (
                             <button
                                 key={example.name}
-                                onClick={() => {
-                                    const repoUrl = `https://github.com/${example.name}`;
-                                    setUrl(repoUrl);
-                                    onSubmit(repoUrl, token || undefined);
-                                }}
-                                className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-neon-purple/50 hover:bg-white/10 transition-all text-gray-300 hover:text-white font-medium"
+                                onClick={() => handleQuickStart(`https://github.com/${example.name}`)}
+                                disabled={isLoading}
+                                className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-neon-purple/50 hover:bg-white/10 transition-all text-gray-300 hover:text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {example.label}
                             </button>

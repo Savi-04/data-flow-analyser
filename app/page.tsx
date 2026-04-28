@@ -264,11 +264,6 @@ export const logout = () => api.post('/auth/logout', {});` },
     setSelectedNode(null);
   };
 
-  // Show landing page if no data
-  if (!graphData && !isAnalyzing) {
-    return <LandingPage onSubmit={handleAnalyze} />;
-  }
-
   // Show loading state
   if (isAnalyzing) {
     return (
@@ -282,7 +277,7 @@ export const logout = () => api.post('/auth/logout', {});` },
     );
   }
 
-  // Show error state
+  // Show error state (must be checked BEFORE landing page fallback)
   if (error) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-void-black">
@@ -298,6 +293,11 @@ export const logout = () => api.post('/auth/logout', {});` },
         </div>
       </div>
     );
+  }
+
+  // Show landing page if no data
+  if (!graphData) {
+    return <LandingPage onSubmit={handleAnalyze} />;
   }
 
   // Show dashboard

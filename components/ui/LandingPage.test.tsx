@@ -9,7 +9,7 @@ vi.mock('./ParticleField', () => ({
 }));
 
 describe('LandingPage', () => {
-    const mockOnSubmit = vi.fn();
+    const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
 
     beforeEach(() => {
         mockOnSubmit.mockClear();
