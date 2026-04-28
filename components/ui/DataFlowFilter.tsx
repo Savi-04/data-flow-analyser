@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StateVariable } from '@/types';
 import { ChevronDown, Filter, X, Database } from 'lucide-react';
 
@@ -12,6 +12,18 @@ interface DataFlowFilterProps {
 export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedVariable, setSelectedVariable] = useState<StateVariable | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleSelect = (variable: StateVariable | null) => {
         setSelectedVariable(variable);
@@ -45,11 +57,11 @@ export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps
     }
 
     return (
-        <div className="relative">
+        <div className="relative flex items-center" ref={containerRef}>
             {/* Dropdown trigger */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2 glass rounded-lg text-sm hover:bg-white/5 transition-all border border-neon-purple/30"
+                className="flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-sm rounded-lg text-sm hover:bg-white/5 transition-all border border-neon-purple/30"
             >
                 <Database size={16} className="text-neon-purple" />
                 <span className="text-gray-300">
@@ -69,16 +81,16 @@ export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps
             {selectedVariable && (
                 <button
                     onClick={handleClear}
-                    className="ml-2 p-2 glass rounded-lg hover:bg-red-500/20 transition-all border border-red-500/30"
+                    className="ml-2 p-2 bg-black/50 backdrop-blur-sm rounded-lg hover:bg-red-500/20 transition-all border border-red-500/30"
                     title="Clear filter"
                 >
                     <X size={14} className="text-red-400" />
                 </button>
             )}
 
-            {/* Dropdown menu */}
+            {/* Dropdown menu — solid background, no backdrop-blur to avoid stacking context issues */}
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-72 glass rounded-lg border border-neon-purple/30 shadow-2xl z-50 max-h-80 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-2 w-72 bg-[#0a0a1a] rounded-lg border border-neon-purple/30 shadow-xl shadow-black/50 z-[100] max-h-80 overflow-y-auto">
                     {/* Header */}
                     <div className="px-4 py-2 border-b border-neon-purple/20">
                         <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -89,7 +101,10 @@ export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps
 
                     {/* Show all option */}
                     <button
-                        onClick={() => handleSelect(null)}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelect(null);
+                        }}
                         className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-neon-purple/10"
                     >
                         <span className="text-gray-300">Show All Components</span>
@@ -98,13 +113,16 @@ export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps
                     {/* Grouped variables */}
                     {Object.entries(groupedVariables).map(([componentName, variables]) => (
                         <div key={componentName}>
-                            <div className="px-4 py-2 text-xs text-gray-500 bg-black/20 uppercase tracking-wider">
+                            <div className="px-4 py-2 text-xs text-gray-500 bg-black/40 uppercase tracking-wider">
                                 {componentName}
                             </div>
                             {variables.map((variable) => (
                                 <button
                                     key={`${variable.sourceComponentId}-${variable.name}`}
-                                    onClick={() => handleSelect(variable)}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        handleSelect(variable);
+                                    }}
                                     className={`w-full px-4 py-3 text-left hover:bg-white/5 transition-colors flex items-center justify-between ${selectedVariable?.name === variable.name ? 'bg-neon-purple/10' : ''
                                         }`}
                                 >
