@@ -7,10 +7,9 @@ import { CodeViewerPane } from '@/components/ui/CodeViewerPane';
 import { DataFlowFilter } from '@/components/ui/DataFlowFilter';
 import { ComponentSearch } from '@/components/ui/ComponentSearch';
 import { ForceGraph } from '@/components/3d/ForceGraph';
-import { fetchRepoData } from '@/lib/actions/fetchRepoData';
 import { getMockGraphData } from '@/lib/actions/getMockData';
 import { analyzeCode } from '@/lib/utils/analyzeCode';
-import { GraphData, ComponentNode, FileNode, StateVariable } from '@/types';
+import { GraphData, ComponentNode, FileNode, StateVariable, RepoData } from '@/types';
 import { ArrowLeft, Loader2, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from 'lucide-react';
 
 export default function Home() {
@@ -198,12 +197,20 @@ export const logout = () => api.post('/auth/logout', {});` },
         return;
       }
 
-      // Fetch repository data (pass token for private repos)
-      const repoData = await fetchRepoData(url, token);
+      // Fetch repository data via API route
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoUrl: url, token }),
+      });
 
-      if (!repoData) {
-        throw new Error('Failed to fetch repository data');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch repository data');
       }
+
+      const repoData = data as RepoData;
 
       setRepoName(`${repoData.owner}/${repoData.repo}`);
       setFiles(repoData.files);
