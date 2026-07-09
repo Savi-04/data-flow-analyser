@@ -7,9 +7,10 @@ import { ChevronDown, Filter, X, Database } from 'lucide-react';
 interface DataFlowFilterProps {
     stateVariables: StateVariable[];
     onFilter: (filteredNodeIds: string[] | null) => void;
+    onFlowSelect?: (variable: StateVariable | null) => void;
 }
 
-export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps) {
+export function DataFlowFilter({ stateVariables, onFilter, onFlowSelect }: DataFlowFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedVariable, setSelectedVariable] = useState<StateVariable | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +29,7 @@ export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps
     const handleSelect = (variable: StateVariable | null) => {
         setSelectedVariable(variable);
         setIsOpen(false);
+        onFlowSelect?.(variable);
 
         if (!variable) {
             onFilter(null); // Show all nodes
@@ -41,6 +43,7 @@ export function DataFlowFilter({ stateVariables, onFilter }: DataFlowFilterProps
 
     const handleClear = () => {
         setSelectedVariable(null);
+        onFlowSelect?.(null);
         onFilter(null);
     };
 

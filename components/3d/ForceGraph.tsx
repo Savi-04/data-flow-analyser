@@ -2,11 +2,11 @@
 
 import { useRef, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Stars, Grid } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
-import { GraphNode } from './GraphNode';
+import { GraphNode, TYPE_TINTS } from './GraphNode';
 import { GraphLink } from './GraphLink';
-import { GraphData, ComponentNode } from '@/types';
+import { GraphData, ComponentNode, StateVariable } from '@/types';
 import * as THREE from 'three';
 
 interface ForceGraphProps {
@@ -14,37 +14,81 @@ interface ForceGraphProps {
     onNodeSelect: (node: ComponentNode | null) => void;
     filteredNodeIds?: string[] | null;
     highlightedNodeId?: string | null;
+    activeFlow?: StateVariable | null;
 }
 
-export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNodeId }: ForceGraphProps) {
+// Vertical strata by architectural role — the layout itself communicates
+// the app's shape instead of nodes settling into an arbitrary hairball.
+const STRATA_Y: Record<ComponentNode['type'], number> = {
+    component: 6,
+    hook: 0,
+    util: -6,
+};
+
+function topLevelDir(filePath: string): string {
+    const parts = filePath.split('/');
+    return parts.length > 1 ? parts[0] : '__root__';
+}
+
+export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNodeId, activeFlow }: ForceGraphProps) {
     const [hoveredNode, setHoveredNode] = useState<ComponentNode | null>(null);
     const [selectedNode, setSelectedNode] = useState<ComponentNode | null>(null);
 
-    // Simple force-directed layout algorithm
+    // Adjacency map: nodeId -> Set of directly connected nodeIds, and
+    // nodeId -> indices of links touching it. Drives hover-neighborhood dimming.
+    const { adjacency, linkTouches } = useMemo(() => {
+        const adjacency = new Map<string, Set<string>>();
+        const linkTouches = new Map<string, Set<number>>();
+
+        data.links.forEach((link, index) => {
+            if (!adjacency.has(link.source)) adjacency.set(link.source, new Set());
+            if (!adjacency.has(link.target)) adjacency.set(link.target, new Set());
+            adjacency.get(link.source)!.add(link.target);
+            adjacency.get(link.target)!.add(link.source);
+
+            if (!linkTouches.has(link.source)) linkTouches.set(link.source, new Set());
+            if (!linkTouches.has(link.target)) linkTouches.set(link.target, new Set());
+            linkTouches.get(link.source)!.add(index);
+            linkTouches.get(link.target)!.add(index);
+        });
+
+        return { adjacency, linkTouches };
+    }, [data.links]);
+
+    // Stratified force-directed layout: Y is locked by role (component / hook /
+    // util), X/Z clustered by top-level directory, then relaxed with a
+    // Y-flattened repulsion/attraction pass plus weak gravity to cluster centers.
     const nodePositions = useMemo(() => {
         const positions = new Map<string, [number, number, number]>();
         const { nodes, links } = data;
 
         if (nodes.length === 0) return positions;
 
-        // Initialize positions in a sphere
-        nodes.forEach((node, index) => {
-            const phi = Math.acos(-1 + (2 * index) / nodes.length);
-            const theta = Math.sqrt(nodes.length * Math.PI) * phi;
-            const radius = 10;
+        // Assign each top-level directory a stable center on a ring
+        const dirs = Array.from(new Set(nodes.map(n => topLevelDir(n.filePath))));
+        const clusterCenters = new Map<string, THREE.Vector2>();
+        dirs.forEach((dir, index) => {
+            const angle = (index / dirs.length) * Math.PI * 2;
+            clusterCenters.set(dir, new THREE.Vector2(Math.cos(angle) * 8, Math.sin(angle) * 8));
+        });
+
+        nodes.forEach((node) => {
+            const center = clusterCenters.get(topLevelDir(node.filePath))!;
+            const jitterAngle = Math.random() * Math.PI * 2;
+            const jitterRadius = Math.random() * 2.5;
+            const baseY = STRATA_Y[node.type] ?? 0;
 
             positions.set(node.id, [
-                radius * Math.cos(theta) * Math.sin(phi),
-                radius * Math.sin(theta) * Math.sin(phi),
-                radius * Math.cos(phi),
+                center.x + Math.cos(jitterAngle) * jitterRadius,
+                baseY + (Math.random() - 0.5) * 1.6,
+                center.y + Math.sin(jitterAngle) * jitterRadius,
             ]);
         });
 
-        // Simple force-directed adjustment
+        // Relaxation pass — forces stay in the X/Z plane; Y is held to its strata
         for (let iteration = 0; iteration < 50; iteration++) {
             const forces = new Map<string, THREE.Vector3>();
 
-            // Initialize forces
             nodes.forEach(node => {
                 forces.set(node.id, new THREE.Vector3(0, 0, 0));
             });
@@ -89,13 +133,21 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                 }
             });
 
-            // Apply forces
+            // Weak gravity toward directory cluster center
+            nodes.forEach(node => {
+                const pos = positions.get(node.id)!;
+                const center = clusterCenters.get(topLevelDir(node.filePath))!;
+                const toCenter = new THREE.Vector3(center.x - pos[0], 0, center.y - pos[2]);
+                forces.get(node.id)!.add(toCenter.multiplyScalar(0.01));
+            });
+
+            // Apply forces — zero out Y so nodes stay locked to their strata
             nodes.forEach(node => {
                 const pos = positions.get(node.id)!;
                 const force = forces.get(node.id)!;
                 positions.set(node.id, [
                     pos[0] + force.x,
-                    pos[1] + force.y,
+                    pos[1],
                     pos[2] + force.z,
                 ]);
             });
@@ -113,16 +165,52 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
         setHoveredNode(node);
     };
 
-    // Check if node should be dimmed (filtered out)
+    const hoveredNeighbors = hoveredNode ? adjacency.get(hoveredNode.id) : undefined;
+    const hoveredLinkIndices = hoveredNode ? linkTouches.get(hoveredNode.id) : undefined;
+    const neighborhoodColor = hoveredNode ? TYPE_TINTS[hoveredNode.type] : undefined;
+
+    // Determine flow-active links + nodes from the selected state variable
+    const flowLinkIndices = useMemo(() => {
+        if (!activeFlow) return new Set<number>();
+        const consumers = new Set(activeFlow.consumers);
+        const indices = new Set<number>();
+        data.links.forEach((link, index) => {
+            if (link.source === activeFlow.sourceComponentId && consumers.has(link.target)) {
+                indices.add(index);
+            }
+        });
+        return indices;
+    }, [activeFlow, data.links]);
+
+    const flowNodeIds = useMemo(() => {
+        if (!activeFlow) return new Set<string>();
+        return new Set([activeFlow.sourceComponentId, ...activeFlow.consumers]);
+    }, [activeFlow]);
+
+    // Check if node should be dimmed
     const isNodeDimmed = (nodeId: string) => {
-        if (!filteredNodeIds) return false;
-        return !filteredNodeIds.includes(nodeId);
+        if (activeFlow) return !flowNodeIds.has(nodeId);
+        if (filteredNodeIds && !filteredNodeIds.includes(nodeId)) return true;
+        if (hoveredNode && nodeId !== hoveredNode.id && !hoveredNeighbors?.has(nodeId)) return true;
+        return false;
+    };
+
+    const isNodeInNeighborhood = (nodeId: string) => {
+        if (!hoveredNode) return false;
+        return hoveredNeighbors?.has(nodeId) ?? false;
     };
 
     // Check if link should be dimmed
-    const isLinkDimmed = (source: string, target: string) => {
-        if (!filteredNodeIds) return false;
-        return !filteredNodeIds.includes(source) || !filteredNodeIds.includes(target);
+    const isLinkDimmed = (source: string, target: string, index: number) => {
+        if (activeFlow) return !flowLinkIndices.has(index);
+        if (filteredNodeIds && (!filteredNodeIds.includes(source) || !filteredNodeIds.includes(target))) return true;
+        if (hoveredNode && !hoveredLinkIndices?.has(index)) return true;
+        return false;
+    };
+
+    const isLinkInNeighborhood = (index: number) => {
+        if (!hoveredNode) return false;
+        return hoveredLinkIndices?.has(index) ?? false;
     };
 
     return (
@@ -141,39 +229,21 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                     }}
                 />
 
-                {/* Enhanced Lighting */}
-                <ambientLight intensity={0.15} />
-                <pointLight position={[10, 10, 10]} intensity={0.8} color="#00f3ff" />
-                <pointLight position={[-10, -10, -10]} intensity={0.5} color="#bf00ff" />
-                <pointLight position={[0, 15, 0]} intensity={0.3} color="#ffffff" />
+                {/* Soft neutral ambience — shader orbs carry their own light */}
+                <ambientLight intensity={0.25} />
 
                 {/* Fog for depth */}
                 <fog attach="fog" args={['#050510', 25, 80]} />
 
-                {/* Starfield background */}
+                {/* Sparse starfield — quiet background, not a spectacle */}
                 <Stars
                     radius={150}
                     depth={80}
-                    count={8000}
-                    factor={5}
-                    saturation={0.5}
+                    count={1200}
+                    factor={3}
+                    saturation={0}
                     fade
-                    speed={0.5}
-                />
-
-                {/* Grid plane for spatial reference */}
-                <Grid
-                    position={[0, -12, 0]}
-                    args={[50, 50]}
-                    cellSize={1}
-                    cellThickness={0.3}
-                    cellColor="#1a1a3a"
-                    sectionSize={5}
-                    sectionThickness={0.8}
-                    sectionColor="#2a2a5a"
-                    fadeDistance={60}
-                    fadeStrength={1}
-                    infiniteGrid
+                    speed={0.3}
                 />
 
                 {/* Render nodes */}
@@ -191,6 +261,8 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                             isSelected={selectedNode?.id === node.id}
                             isDimmed={isNodeDimmed(node.id)}
                             isHighlighted={highlightedNodeId === node.id}
+                            inNeighborhood={isNodeInNeighborhood(node.id)}
+                            isFlowActive={flowNodeIds.has(node.id)}
                         />
                     );
                 })}
@@ -207,46 +279,36 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                             key={`${link.source}-${link.target}-${index}`}
                             start={startPos}
                             end={endPos}
-                            isDimmed={isLinkDimmed(link.source, link.target)}
+                            isDimmed={isLinkDimmed(link.source, link.target, index)}
+                            isNeighborhood={isLinkInNeighborhood(index)}
+                            isFlowActive={flowLinkIndices.has(index)}
+                            neighborhoodColor={neighborhoodColor}
                             props={link.props}
                         />
                     );
                 })}
 
-                {/* Post-processing effects */}
+                {/* Restrained post-processing — precision over spectacle */}
                 <EffectComposer>
                     <Bloom
-                        luminanceThreshold={0.2}
+                        luminanceThreshold={0.3}
                         luminanceSmoothing={0.9}
-                        intensity={1.5}
+                        intensity={0.6}
                         mipmapBlur
                     />
-                    <Vignette eskil={false} offset={0.1} darkness={0.8} />
+                    <Vignette eskil={false} offset={0.15} darkness={0.7} />
                 </EffectComposer>
             </Canvas>
 
             {/* Holographic tooltip */}
             {hoveredNode && (
-                <div className="absolute top-4 left-4 glass p-4 rounded-lg pointer-events-none border border-neon-cyan/30">
-                    <h3 className="text-neon-cyan text-lg font-bold text-glow-cyan">
+                <div className="absolute top-4 left-4 bg-[#0a0a1a]/90 backdrop-blur-sm p-3 rounded-lg pointer-events-none border border-white/10">
+                    <h3 className="text-white text-sm font-semibold">
                         {hoveredNode.name}
                     </h3>
-                    <p className="text-gray-400 text-sm mt-1">
-                        Type: <span className="text-neon-purple">{hoveredNode.type}</span>
+                    <p className="text-gray-400 text-xs mt-1">
+                        {hoveredNode.type} · {hoveredNode.complexity} connection{hoveredNode.complexity !== 1 ? 's' : ''}
                     </p>
-                    <p className="text-gray-400 text-sm">
-                        Connections: <span className="text-neon-cyan">{hoveredNode.complexity}</span>
-                    </p>
-                    {hoveredNode.usesState && (
-                        <span className="inline-block mt-2 px-2 py-1 bg-neon-purple/20 text-neon-purple text-xs rounded border border-neon-purple/30">
-                            useState
-                        </span>
-                    )}
-                    {hoveredNode.usesEffect && (
-                        <span className="inline-block mt-2 ml-1 px-2 py-1 bg-neon-cyan/20 text-neon-cyan text-xs rounded border border-neon-cyan/30">
-                            useEffect
-                        </span>
-                    )}
                 </div>
             )}
         </div>

@@ -17,6 +17,7 @@ export default function Home() {
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [stateVariables, setStateVariables] = useState<StateVariable[]>([]);
   const [filteredNodeIds, setFilteredNodeIds] = useState<string[] | null>(null);
+  const [activeFlow, setActiveFlow] = useState<StateVariable | null>(null);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<ComponentNode | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
@@ -37,8 +38,8 @@ export default function Home() {
         const mockData = await getMockGraphData();
         setGraphData(mockData);
         setStateVariables([
-          { name: 'user', setterName: 'setUser', sourceComponentId: 'src/App', sourceComponentName: 'App', consumers: ['src/components/Header'] },
-          { name: 'isLoggedIn', setterName: 'setIsLoggedIn', sourceComponentId: 'src/App', sourceComponentName: 'App', consumers: ['src/components/Header', 'src/components/Footer'] },
+          { name: 'user', setterName: 'setUser', sourceComponentId: 'App', sourceComponentName: 'App', consumers: ['Header'] },
+          { name: 'isLoggedIn', setterName: 'setIsLoggedIn', sourceComponentId: 'App', sourceComponentName: 'App', consumers: ['Header', 'Footer'] },
         ]);
         setFiles([
           {
@@ -236,10 +237,12 @@ export const logout = () => api.post('/auth/logout', {});` },
     setRepoName('');
     setStateVariables([]);
     setFilteredNodeIds(null);
+    setActiveFlow(null);
   };
 
   const handleFilter = (nodeIds: string[] | null) => {
     setFilteredNodeIds(nodeIds);
+    if (!nodeIds) setActiveFlow(null);
   };
 
   // Get file content for selected node
@@ -339,20 +342,21 @@ export const logout = () => api.post('/auth/logout', {});` },
             <DataFlowFilter
               stateVariables={stateVariables}
               onFilter={handleFilter}
+              onFlowSelect={setActiveFlow}
             />
 
-            {/* Legend */}
+            {/* Legend — also reads as the vertical strata order (top to bottom) */}
             <div className="flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#7dd3fc' }} />
                 <span className="text-gray-400">Components</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f0abfc' }} />
                 <span className="text-gray-400">Hooks</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#86efac' }} />
                 <span className="text-gray-400">Utils</span>
               </div>
             </div>
@@ -391,6 +395,7 @@ export const logout = () => api.post('/auth/logout', {});` },
               onNodeSelect={handleNodeSelect}
               filteredNodeIds={filteredNodeIds}
               highlightedNodeId={highlightedNodeId}
+              activeFlow={activeFlow}
             />
           )}
         </div>
