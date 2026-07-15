@@ -1,12 +1,12 @@
 'use client';
 
 import { useRef, useMemo, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import * as THREE from 'three';
 import { GraphNode, TYPE_COLORS } from './GraphNode';
 import { GraphLink } from './GraphLink';
 import { GraphData, ComponentNode, StateVariable } from '@/types';
-import * as THREE from 'three';
 
 interface ForceGraphProps {
     data: GraphData;
@@ -29,9 +29,23 @@ function topLevelDir(filePath: string): string {
     return parts.length > 1 ? parts[0] : '__root__';
 }
 
+// Smoothly pans OrbitControls' target to a node's position — otherwise a
+// search/highlight selection can point at a node that's off-screen or
+// behind the camera, which looks like nothing happened at all.
+function CameraRig({ targetPosition, controlsRef }: { targetPosition: [number, number, number] | null; controlsRef: React.RefObject<any> }) {
+    useFrame((state, delta) => {
+        if (!targetPosition || !controlsRef.current) return;
+        const target = new THREE.Vector3(...targetPosition);
+        controlsRef.current.target.lerp(target, Math.min(1, delta * 3));
+        controlsRef.current.update();
+    });
+    return null;
+}
+
 export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNodeId, activeFlow }: ForceGraphProps) {
     const [hoveredNode, setHoveredNode] = useState<ComponentNode | null>(null);
     const [selectedNode, setSelectedNode] = useState<ComponentNode | null>(null);
+    const controlsRef = useRef<any>(null);
 
     const { adjacency, linkTouches } = useMemo(() => {
         const adjacency = new Map<string, Set<string>>();
@@ -160,6 +174,10 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
     const hoveredLinkIndices = hoveredNode ? linkTouches.get(hoveredNode.id) : undefined;
     const neighborhoodColor = hoveredNode ? TYPE_COLORS[hoveredNode.type] : undefined;
 
+    const highlightedNeighbors = highlightedNodeId ? adjacency.get(highlightedNodeId) : undefined;
+    const highlightedLinkIndices = highlightedNodeId ? linkTouches.get(highlightedNodeId) : undefined;
+    const highlightedPosition = highlightedNodeId ? nodePositions.get(highlightedNodeId) ?? null : null;
+
     const flowLinkIndices = useMemo(() => {
         if (!activeFlow) return new Set<number>();
         const consumers = new Set(activeFlow.consumers);
@@ -179,24 +197,31 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
 
     const isNodeDimmed = (nodeId: string) => {
         if (activeFlow) return !flowNodeIds.has(nodeId);
+        if (highlightedNodeId) {
+            if (nodeId === highlightedNodeId) return false;
+            return !(highlightedNeighbors?.has(nodeId));
+        }
         if (filteredNodeIds && !filteredNodeIds.includes(nodeId)) return true;
         if (hoveredNode && nodeId !== hoveredNode.id && !hoveredNeighbors?.has(nodeId)) return true;
         return false;
     };
 
     const isNodeInNeighborhood = (nodeId: string) => {
+        if (highlightedNodeId) return highlightedNeighbors?.has(nodeId) ?? false;
         if (!hoveredNode) return false;
         return hoveredNeighbors?.has(nodeId) ?? false;
     };
 
     const isLinkDimmed = (source: string, target: string, index: number) => {
         if (activeFlow) return !flowLinkIndices.has(index);
+        if (highlightedNodeId) return !(highlightedLinkIndices?.has(index));
         if (filteredNodeIds && (!filteredNodeIds.includes(source) || !filteredNodeIds.includes(target))) return true;
         if (hoveredNode && !hoveredLinkIndices?.has(index)) return true;
         return false;
     };
 
     const isLinkInNeighborhood = (index: number) => {
+        if (highlightedNodeId) return highlightedLinkIndices?.has(index) ?? false;
         if (!hoveredNode) return false;
         return hoveredLinkIndices?.has(index) ?? false;
     };
@@ -206,6 +231,7 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
             <Canvas>
                 <PerspectiveCamera makeDefault position={[0, 0, 30]} />
                 <OrbitControls
+                    ref={controlsRef}
                     enableDamping
                     dampingFactor={0.05}
                     rotateSpeed={0.5}
@@ -216,6 +242,7 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                         RIGHT: 2,
                     }}
                 />
+                <CameraRig targetPosition={highlightedPosition} controlsRef={controlsRef} />
 
                 <color attach="background" args={['#f6f7fb']} />
                 <ambientLight intensity={0.9} />
