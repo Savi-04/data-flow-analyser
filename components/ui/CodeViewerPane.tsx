@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, File, Maximize2, Minimize2, PanelRightClose } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface CodeViewerPaneProps {
     fileName: string | null;
@@ -87,7 +87,7 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
     return (
         <div
             ref={containerRef}
-            className="h-full flex flex-col border-l border-neon-cyan/20 bg-black/30 relative flex-shrink-0"
+            className="h-full flex flex-col border-l border-neon-cyan/20 bg-white/70 backdrop-blur-md relative flex-shrink-0"
             style={{ width: isMaximized ? '60vw' : width }}
         >
             {/* Resize Handle */}
@@ -98,7 +98,7 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
             />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-neon-cyan/20 bg-black/50 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neon-cyan/20 bg-white/60 flex-shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                     <File className="w-4 h-4 text-neon-cyan flex-shrink-0" />
                     <div className="min-w-0">
@@ -113,21 +113,21 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
                 <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                         onClick={toggleMaximize}
-                        className="p-1.5 hover:bg-neon-purple/20 rounded transition-colors"
+                        className="p-1.5 hover:bg-neon-purple/10 rounded transition-colors"
                         title={isMaximized ? "Restore" : "Maximize"}
                     >
                         {isMaximized ? (
-                            <Minimize2 className="w-4 h-4 text-gray-400" />
+                            <Minimize2 className="w-4 h-4 text-gray-500" />
                         ) : (
-                            <Maximize2 className="w-4 h-4 text-gray-400" />
+                            <Maximize2 className="w-4 h-4 text-gray-500" />
                         )}
                     </button>
                     <button
                         onClick={onClose}
-                        className="p-2 bg-neon-cyan/20 hover:bg-red-500/30 rounded-md transition-colors border border-neon-cyan/30"
+                        className="p-2 bg-neon-cyan/10 hover:bg-red-100 rounded-md transition-colors border border-neon-cyan/30"
                         title="Close Code Viewer"
                     >
-                        <PanelRightClose className="w-5 h-5 text-neon-cyan hover:text-red-400" />
+                        <PanelRightClose className="w-5 h-5 text-neon-cyan hover:text-red-500" />
                     </button>
                 </div>
             </div>
@@ -137,13 +137,13 @@ export function CodeViewerPane({ fileName, filePath, content, onClose }: CodeVie
                 className="flex-1 overflow-auto"
                 style={{
                     scrollbarWidth: 'thin',
-                    scrollbarColor: '#bf00ff #0a0a0a'
+                    scrollbarColor: '#c7c9d9 transparent'
                 }}
             >
                 {content ? (
                     <SyntaxHighlighter
                         language={getLanguage(filePath)}
-                        style={vscDarkPlus}
+                        style={vs}
                         customStyle={{
                             margin: 0,
                             padding: '1rem',

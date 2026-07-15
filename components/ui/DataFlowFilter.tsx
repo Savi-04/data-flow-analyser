@@ -64,10 +64,11 @@ export function DataFlowFilter({ stateVariables, onFilter, onFlowSelect }: DataF
             {/* Dropdown trigger */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-sm rounded-lg text-sm hover:bg-white/5 transition-all border border-neon-purple/30"
+                className="flex items-center gap-2 px-2 sm:px-4 py-2 bg-white/70 backdrop-blur-sm rounded-lg text-sm hover:bg-black/[0.03] transition-all border border-neon-purple/30 flex-shrink-0"
+                aria-label="Filter by state"
             >
                 <Database size={16} className="text-neon-purple" />
-                <span className="text-gray-300">
+                <span className="text-gray-700 hidden sm:inline">
                     {selectedVariable ? (
                         <span className="text-neon-cyan">{selectedVariable.name}</span>
                     ) : (
@@ -76,7 +77,7 @@ export function DataFlowFilter({ stateVariables, onFilter, onFlowSelect }: DataF
                 </span>
                 <ChevronDown
                     size={16}
-                    className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    className={`text-gray-500 transition-transform hidden sm:inline ${isOpen ? 'rotate-180' : ''}`}
                 />
             </button>
 
@@ -84,19 +85,19 @@ export function DataFlowFilter({ stateVariables, onFilter, onFlowSelect }: DataF
             {selectedVariable && (
                 <button
                     onClick={handleClear}
-                    className="ml-2 p-2 bg-black/50 backdrop-blur-sm rounded-lg hover:bg-red-500/20 transition-all border border-red-500/30"
+                    className="ml-2 p-2 bg-white/70 backdrop-blur-sm rounded-lg hover:bg-red-50 transition-all border border-red-300"
                     title="Clear filter"
                 >
-                    <X size={14} className="text-red-400" />
+                    <X size={14} className="text-red-500" />
                 </button>
             )}
 
             {/* Dropdown menu — solid background, no backdrop-blur to avoid stacking context issues */}
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-72 bg-[#0a0a1a] rounded-lg border border-neon-purple/30 shadow-xl shadow-black/50 z-[100] max-h-80 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-lg border border-neon-purple/20 shadow-xl z-[100] max-h-80 overflow-y-auto">
                     {/* Header */}
-                    <div className="px-4 py-2 border-b border-neon-purple/20">
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <div className="px-4 py-2 border-b border-neon-purple/10">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Filter size={14} />
                             <span>Select a state variable to filter</span>
                         </div>
@@ -108,15 +109,15 @@ export function DataFlowFilter({ stateVariables, onFilter, onFlowSelect }: DataF
                             e.preventDefault();
                             handleSelect(null);
                         }}
-                        className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-neon-purple/10"
+                        className="w-full px-4 py-3 text-left hover:bg-black/[0.03] transition-colors border-b border-neon-purple/10"
                     >
-                        <span className="text-gray-300">Show All Components</span>
+                        <span className="text-gray-700">Show All Components</span>
                     </button>
 
                     {/* Grouped variables */}
                     {Object.entries(groupedVariables).map(([componentName, variables]) => (
                         <div key={componentName}>
-                            <div className="px-4 py-2 text-xs text-gray-500 bg-black/40 uppercase tracking-wider">
+                            <div className="px-4 py-2 text-xs text-gray-500 bg-black/[0.03] uppercase tracking-wider">
                                 {componentName}
                             </div>
                             {variables.map((variable) => (
@@ -126,7 +127,7 @@ export function DataFlowFilter({ stateVariables, onFilter, onFlowSelect }: DataF
                                         e.preventDefault();
                                         handleSelect(variable);
                                     }}
-                                    className={`w-full px-4 py-3 text-left hover:bg-white/5 transition-colors flex items-center justify-between ${selectedVariable?.name === variable.name ? 'bg-neon-purple/10' : ''
+                                    className={`w-full px-4 py-3 text-left hover:bg-black/[0.03] transition-colors flex items-center justify-between ${selectedVariable?.name === variable.name ? 'bg-neon-purple/10' : ''
                                         }`}
                                 >
                                     <div>

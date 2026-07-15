@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LandingPage } from '@/components/ui/LandingPage';
 import { FileTree } from '@/components/ui/FileTree';
 import { CodeViewerPane } from '@/components/ui/CodeViewerPane';
@@ -26,6 +26,19 @@ export default function Home() {
   const [repoName, setRepoName] = useState<string>('');
   const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(true);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(true);
+
+  // Reflow guard (WCAG 1.4.10): auto-collapse the fixed-width side panels on
+  // narrow viewports so the layout never needs to scroll horizontally.
+  useEffect(() => {
+    const applyReflow = () => {
+      const narrow = window.innerWidth < 1024;
+      setIsFileExplorerOpen(!narrow);
+      setIsCodeViewerOpen(!narrow);
+    };
+    applyReflow();
+    window.addEventListener('resize', applyReflow);
+    return () => window.removeEventListener('resize', applyReflow);
+  }, []);
 
   const handleAnalyze = async (url: string, token?: string) => {
     setIsAnalyzing(true);
@@ -281,7 +294,7 @@ export const logout = () => api.post('/auth/logout', {});` },
         <div className="glass p-8 rounded-2xl text-center">
           <Loader2 className="w-16 h-16 text-neon-purple animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-neon-cyan mb-2">Analyzing Repository</h2>
-          <p className="text-gray-400">Fetching files and building graph...</p>
+          <p className="text-gray-600">Fetching files and building graph...</p>
         </div>
       </div>
     );
@@ -293,7 +306,7 @@ export const logout = () => api.post('/auth/logout', {});` },
       <div className="w-full h-screen flex items-center justify-center bg-void-black">
         <div className="glass p-8 rounded-2xl text-center max-w-md">
           <h2 className="text-2xl font-bold text-red-500 mb-4">Error</h2>
-          <p className="text-gray-400 mb-6">{error}</p>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={handleReset}
             className="glass-cyan px-6 py-3 rounded-lg font-semibold text-neon-cyan hover:bg-neon-cyan/10 transition-all"
@@ -315,22 +328,22 @@ export const logout = () => api.post('/auth/logout', {});` },
     <div className="w-full h-screen bg-void-black overflow-hidden">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-20 glass-cyan border-b border-neon-cyan/20">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between px-2 sm:px-6 py-4 gap-1 sm:gap-2 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-4 min-w-0 flex-shrink-0">
             <button
               onClick={handleReset}
-              className="flex items-center gap-2 text-neon-cyan hover:text-neon-purple transition-colors"
+              className="flex items-center gap-2 text-neon-cyan hover:text-neon-purple transition-colors flex-shrink-0"
             >
               <ArrowLeft size={20} />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </button>
-            <div className="h-6 w-px bg-neon-cyan/20" />
-            <h1 className="text-xl font-bold text-neon-purple text-glow-purple">
+            <div className="h-6 w-px bg-neon-cyan/20 hidden sm:block" />
+            <h1 className="text-xl font-bold text-neon-purple text-glow-purple truncate max-w-[18vw] sm:max-w-[30vw]">
               {repoName}
             </h1>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1 sm:gap-6 min-w-0 flex-shrink-0">
             {/* Component Search */}
             <ComponentSearch
               nodes={graphData?.nodes || []}
@@ -345,19 +358,21 @@ export const logout = () => api.post('/auth/logout', {});` },
               onFlowSelect={setActiveFlow}
             />
 
-            {/* Legend — also reads as the vertical strata order (top to bottom) */}
-            <div className="flex items-center gap-6 text-sm">
+            {/* Legend — also reads as the vertical strata order (top to bottom). Hidden
+                below lg: it's supplementary (the graph's own colors already convey this)
+                and is the first thing to drop so the header never forces horizontal scroll. */}
+            <div className="hidden lg:flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#7dd3fc' }} />
-                <span className="text-gray-400">Components</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#4338ca' }} />
+                <span className="text-gray-600">Components</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f0abfc' }} />
-                <span className="text-gray-400">Hooks</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#be185d' }} />
+                <span className="text-gray-600">Hooks</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#86efac' }} />
-                <span className="text-gray-400">Utils</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#047857' }} />
+                <span className="text-gray-600">Utils</span>
               </div>
             </div>
           </div>
@@ -376,7 +391,7 @@ export const logout = () => api.post('/auth/logout', {});` },
             />
           </div>
         ) : (
-          <div className="h-full flex-shrink-0 border-r border-neon-purple/20 bg-black/30">
+          <div className="h-full flex-shrink-0 border-r border-neon-purple/20 bg-black/5">
             <button
               onClick={() => setIsFileExplorerOpen(true)}
               className="h-full w-10 flex items-center justify-center hover:bg-neon-purple/20 transition-colors"
@@ -387,8 +402,10 @@ export const logout = () => api.post('/auth/logout', {});` },
           </div>
         )}
 
-        {/* Center - 3D Graph */}
-        <div className="flex-1 h-full relative min-w-0 overflow-auto">
+        {/* Center - 3D Graph. This section is exempt from WCAG 1.4.10 reflow
+            (diagrams inherently require 2D/3D layout) but must never spill a
+            scrollbar itself — the WebGL canvas always fills its container. */}
+        <div className="flex-1 h-full relative min-w-0 overflow-hidden">
           {graphData && (
             <ForceGraph
               data={graphData}
@@ -409,7 +426,7 @@ export const logout = () => api.post('/auth/logout', {});` },
             onClose={() => setIsCodeViewerOpen(false)}
           />
         ) : (
-          <div className="h-full flex-shrink-0 border-l border-neon-cyan/20 bg-black/30">
+          <div className="h-full flex-shrink-0 border-l border-neon-cyan/20 bg-black/5">
             <button
               onClick={() => setIsCodeViewerOpen(true)}
               className="h-full w-10 flex items-center justify-center hover:bg-neon-cyan/20 transition-colors"
@@ -425,17 +442,17 @@ export const logout = () => api.post('/auth/logout', {});` },
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
         <div className="glass px-6 py-3 rounded-full flex items-center gap-6 text-sm">
           <div>
-            <span className="text-gray-400">Nodes: </span>
+            <span className="text-gray-600">Nodes: </span>
             <span className="text-neon-cyan font-bold">{graphData?.nodes.length || 0}</span>
           </div>
           <div className="w-px h-4 bg-neon-purple/20" />
           <div>
-            <span className="text-gray-400">Links: </span>
+            <span className="text-gray-600">Links: </span>
             <span className="text-neon-purple font-bold">{graphData?.links.length || 0}</span>
           </div>
           <div className="w-px h-4 bg-neon-purple/20" />
           <div>
-            <span className="text-gray-400">State Vars: </span>
+            <span className="text-gray-600">State Vars: </span>
             <span className="text-neon-pink font-bold">{stateVariables.length}</span>
           </div>
         </div>

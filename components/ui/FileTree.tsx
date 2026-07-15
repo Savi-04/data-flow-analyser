@@ -90,7 +90,7 @@ function TreeItem({ node }: { node: TreeNode }) {
                     <File size={16} className="text-neon-cyan" />
                 )}
 
-                <span className="text-sm text-gray-300 truncate">{node.name}</span>
+                <span className="text-sm text-gray-700 truncate">{node.name}</span>
             </div>
 
             {hasChildren && isOpen && (
@@ -118,16 +118,16 @@ export function FileTree({ files, onFileClick, onCollapse }: FileTreeProps) {
 
     return (
         <FileClickContext.Provider value={handleFileClick}>
-            <div className="h-full rounded-lg flex flex-col bg-black/40 backdrop-blur-md border border-neon-purple/20">
+            <div className="h-full rounded-lg flex flex-col bg-white/70 backdrop-blur-md border border-neon-purple/20 shadow-sm">
                 {/* Fixed Header - Always Visible */}
-                <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-neon-purple/30 bg-black/60">
-                    <h2 className="text-neon-purple font-bold text-base text-glow-purple">
+                <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-neon-purple/20 bg-white/60">
+                    <h2 className="text-neon-purple font-bold text-base">
                         File Explorer
                     </h2>
                     {onCollapse && (
                         <button
                             onClick={onCollapse}
-                            className="p-2 bg-neon-purple/20 hover:bg-neon-purple/40 rounded-md transition-colors border border-neon-purple/40"
+                            className="p-2 bg-neon-purple/10 hover:bg-neon-purple/20 rounded-md transition-colors border border-neon-purple/30"
                             title="Collapse File Explorer"
                         >
                             <PanelLeftClose className="w-5 h-5 text-neon-purple" />
@@ -139,7 +139,7 @@ export function FileTree({ files, onFileClick, onCollapse }: FileTreeProps) {
                     className="flex-1 overflow-auto px-3 py-2 min-h-0"
                     style={{
                         scrollbarWidth: 'thin',
-                        scrollbarColor: '#bf00ff #0a0a0a'
+                        scrollbarColor: '#c7c9d9 transparent'
                     }}
                 >
                     <div className="min-w-max space-y-0.5">

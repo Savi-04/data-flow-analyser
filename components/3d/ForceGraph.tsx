@@ -2,9 +2,8 @@
 
 import { useRef, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
-import { GraphNode, TYPE_TINTS } from './GraphNode';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { GraphNode, TYPE_COLORS } from './GraphNode';
 import { GraphLink } from './GraphLink';
 import { GraphData, ComponentNode, StateVariable } from '@/types';
 import * as THREE from 'three';
@@ -34,8 +33,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
     const [hoveredNode, setHoveredNode] = useState<ComponentNode | null>(null);
     const [selectedNode, setSelectedNode] = useState<ComponentNode | null>(null);
 
-    // Adjacency map: nodeId -> Set of directly connected nodeIds, and
-    // nodeId -> indices of links touching it. Drives hover-neighborhood dimming.
     const { adjacency, linkTouches } = useMemo(() => {
         const adjacency = new Map<string, Set<string>>();
         const linkTouches = new Map<string, Set<number>>();
@@ -64,7 +61,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
 
         if (nodes.length === 0) return positions;
 
-        // Assign each top-level directory a stable center on a ring
         const dirs = Array.from(new Set(nodes.map(n => topLevelDir(n.filePath))));
         const clusterCenters = new Map<string, THREE.Vector2>();
         dirs.forEach((dir, index) => {
@@ -85,7 +81,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
             ]);
         });
 
-        // Relaxation pass — forces stay in the X/Z plane; Y is held to its strata
         for (let iteration = 0; iteration < 50; iteration++) {
             const forces = new Map<string, THREE.Vector3>();
 
@@ -93,7 +88,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                 forces.set(node.id, new THREE.Vector3(0, 0, 0));
             });
 
-            // Repulsion between all nodes
             for (let i = 0; i < nodes.length; i++) {
                 for (let j = i + 1; j < nodes.length; j++) {
                     const nodeA = nodes[i];
@@ -114,7 +108,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                 }
             }
 
-            // Attraction along links
             links.forEach(link => {
                 const posSource = positions.get(link.source);
                 const posTarget = positions.get(link.target);
@@ -133,7 +126,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                 }
             });
 
-            // Weak gravity toward directory cluster center
             nodes.forEach(node => {
                 const pos = positions.get(node.id)!;
                 const center = clusterCenters.get(topLevelDir(node.filePath))!;
@@ -141,7 +133,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                 forces.get(node.id)!.add(toCenter.multiplyScalar(0.01));
             });
 
-            // Apply forces — zero out Y so nodes stay locked to their strata
             nodes.forEach(node => {
                 const pos = positions.get(node.id)!;
                 const force = forces.get(node.id)!;
@@ -167,9 +158,8 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
 
     const hoveredNeighbors = hoveredNode ? adjacency.get(hoveredNode.id) : undefined;
     const hoveredLinkIndices = hoveredNode ? linkTouches.get(hoveredNode.id) : undefined;
-    const neighborhoodColor = hoveredNode ? TYPE_TINTS[hoveredNode.type] : undefined;
+    const neighborhoodColor = hoveredNode ? TYPE_COLORS[hoveredNode.type] : undefined;
 
-    // Determine flow-active links + nodes from the selected state variable
     const flowLinkIndices = useMemo(() => {
         if (!activeFlow) return new Set<number>();
         const consumers = new Set(activeFlow.consumers);
@@ -187,7 +177,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
         return new Set([activeFlow.sourceComponentId, ...activeFlow.consumers]);
     }, [activeFlow]);
 
-    // Check if node should be dimmed
     const isNodeDimmed = (nodeId: string) => {
         if (activeFlow) return !flowNodeIds.has(nodeId);
         if (filteredNodeIds && !filteredNodeIds.includes(nodeId)) return true;
@@ -200,7 +189,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
         return hoveredNeighbors?.has(nodeId) ?? false;
     };
 
-    // Check if link should be dimmed
     const isLinkDimmed = (source: string, target: string, index: number) => {
         if (activeFlow) return !flowLinkIndices.has(index);
         if (filteredNodeIds && (!filteredNodeIds.includes(source) || !filteredNodeIds.includes(target))) return true;
@@ -223,30 +211,18 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                     rotateSpeed={0.5}
                     zoomSpeed={0.8}
                     mouseButtons={{
-                        LEFT: 0,   // Rotate
-                        MIDDLE: 1, // Dolly (zoom)
-                        RIGHT: 2,  // Pan
+                        LEFT: 0,
+                        MIDDLE: 1,
+                        RIGHT: 2,
                     }}
                 />
 
-                {/* Soft neutral ambience — shader orbs carry their own light */}
-                <ambientLight intensity={0.25} />
+                <color attach="background" args={['#f6f7fb']} />
+                <ambientLight intensity={0.9} />
+                <directionalLight position={[10, 14, 10]} intensity={0.6} />
+                <directionalLight position={[-10, -6, -8]} intensity={0.25} />
+                <fog attach="fog" args={['#f6f7fb', 30, 90]} />
 
-                {/* Fog for depth */}
-                <fog attach="fog" args={['#050510', 25, 80]} />
-
-                {/* Sparse starfield — quiet background, not a spectacle */}
-                <Stars
-                    radius={150}
-                    depth={80}
-                    count={1200}
-                    factor={3}
-                    saturation={0}
-                    fade
-                    speed={0.3}
-                />
-
-                {/* Render nodes */}
                 {data.nodes.map((node) => {
                     const position = nodePositions.get(node.id);
                     if (!position) return null;
@@ -267,7 +243,6 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                     );
                 })}
 
-                {/* Render links */}
                 {data.links.map((link, index) => {
                     const startPos = nodePositions.get(link.source);
                     const endPos = nodePositions.get(link.target);
@@ -287,26 +262,14 @@ export function ForceGraph({ data, onNodeSelect, filteredNodeIds, highlightedNod
                         />
                     );
                 })}
-
-                {/* Restrained post-processing — precision over spectacle */}
-                <EffectComposer>
-                    <Bloom
-                        luminanceThreshold={0.3}
-                        luminanceSmoothing={0.9}
-                        intensity={0.6}
-                        mipmapBlur
-                    />
-                    <Vignette eskil={false} offset={0.15} darkness={0.7} />
-                </EffectComposer>
             </Canvas>
 
-            {/* Holographic tooltip */}
             {hoveredNode && (
-                <div className="absolute top-4 left-4 bg-[#0a0a1a]/90 backdrop-blur-sm p-3 rounded-lg pointer-events-none border border-white/10">
-                    <h3 className="text-white text-sm font-semibold">
+                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg pointer-events-none border border-black/10 shadow-sm">
+                    <h3 className="text-gray-900 text-sm font-semibold">
                         {hoveredNode.name}
                     </h3>
-                    <p className="text-gray-400 text-xs mt-1">
+                    <p className="text-gray-500 text-xs mt-1">
                         {hoveredNode.type} · {hoveredNode.complexity} connection{hoveredNode.complexity !== 1 ? 's' : ''}
                     </p>
                 </div>

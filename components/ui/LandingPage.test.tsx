@@ -3,11 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LandingPage } from './LandingPage';
 
-// Mock the ParticleField component (uses Three.js/Canvas which isn't available in jsdom)
-vi.mock('./ParticleField', () => ({
-    ParticleField: () => <div data-testid="particle-field" />,
-}));
-
 describe('LandingPage', () => {
     const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
 

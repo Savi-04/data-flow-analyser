@@ -49,7 +49,7 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
 
     return (
         <div className="relative" ref={containerRef}>
-            <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm border border-neon-purple/30 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-1 sm:gap-2 bg-white/70 backdrop-blur-sm border border-neon-purple/30 rounded-lg px-1.5 sm:px-3 py-2">
                 <Search className="w-4 h-4 text-neon-purple" />
                 <input
                     type="text"
@@ -61,10 +61,10 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
                     }}
                     onFocus={() => setIsOpen(true)}
                     placeholder="Search components..."
-                    className="bg-transparent text-sm text-white placeholder-gray-500 outline-none w-36"
+                    className="bg-transparent text-sm text-gray-900 placeholder-gray-500 outline-none w-8 sm:w-36"
                 />
                 {(selectedNodeId || query) && (
-                    <button onClick={handleClear} className="text-gray-400 hover:text-white">
+                    <button onClick={handleClear} className="text-gray-500 hover:text-gray-900">
                         <X className="w-4 h-4" />
                     </button>
                 )}
@@ -72,7 +72,7 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
 
             {/* Dropdown suggestions — use onMouseDown to fire before onBlur */}
             {isOpen && filteredNodes.length > 0 && (
-                <div className="absolute top-full mt-1 left-0 right-0 bg-[#0a0a1a] border border-neon-purple/30 rounded-lg overflow-hidden z-[100] max-h-64 overflow-y-auto shadow-xl shadow-black/50">
+                <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-neon-purple/20 rounded-lg overflow-hidden z-[100] max-h-64 overflow-y-auto shadow-xl">
                     {filteredNodes.map(node => (
                         <button
                             key={node.id}
@@ -80,7 +80,7 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
                                 e.preventDefault(); // Prevent input blur from closing dropdown
                                 handleSelect(node.id);
                             }}
-                            className="w-full px-3 py-2 text-left text-sm text-white hover:bg-neon-purple/20 transition-colors"
+                            className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-neon-purple/10 transition-colors"
                         >
                             {node.name}
                         </button>
