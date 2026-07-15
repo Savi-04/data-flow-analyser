@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, ArrowRight } from 'lucide-react';
 
 interface ComponentSearchProps {
     nodes: { id: string; name: string }[];
@@ -47,6 +47,21 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
         setQuery('');
     };
 
+    const handleApply = () => {
+        if (filteredNodes.length > 0) {
+            handleSelect(filteredNodes[0].id);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleApply();
+        } else if (e.key === 'Escape') {
+            setIsOpen(false);
+        }
+    };
+
     return (
         <div className="relative" ref={containerRef}>
             <div className="flex items-center gap-1 sm:gap-2 bg-white/70 backdrop-blur-sm border border-neon-purple/30 rounded-lg px-1.5 sm:px-3 py-2">
@@ -60,11 +75,24 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
                         if (selectedNodeId) onSelect(null);
                     }}
                     onFocus={() => setIsOpen(true)}
+                    onKeyDown={handleKeyDown}
                     placeholder="Search components..."
                     className="bg-transparent text-sm text-gray-900 placeholder-gray-500 outline-none w-8 sm:w-36"
                 />
+                {query.trim() && !selectedNodeId && (
+                    <button
+                        type="button"
+                        onClick={handleApply}
+                        disabled={filteredNodes.length === 0}
+                        className="text-neon-purple hover:text-neon-cyan disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                        title="Go to component"
+                        aria-label="Go to component"
+                    >
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                )}
                 {(selectedNodeId || query) && (
-                    <button onClick={handleClear} className="text-gray-500 hover:text-gray-900">
+                    <button onClick={handleClear} className="text-gray-500 hover:text-gray-900 flex-shrink-0" aria-label="Clear search">
                         <X className="w-4 h-4" />
                     </button>
                 )}
