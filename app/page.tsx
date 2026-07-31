@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import { LandingPage } from '@/components/ui/LandingPage';
 import { FileTree } from '@/components/ui/FileTree';
 import { CodeViewerPane } from '@/components/ui/CodeViewerPane';
+import { ComponentDetail } from '@/components/ui/ComponentDetail';
 import { DataFlowFilter } from '@/components/ui/DataFlowFilter';
 import { ComponentSearch } from '@/components/ui/ComponentSearch';
+import { ModeSelector } from '@/components/ui/ModeSelector';
+import { ArchitectureInsights } from '@/components/ui/ArchitectureInsights';
 import { ForceGraph } from '@/components/3d/ForceGraph';
 import { getMockGraphData } from '@/lib/actions/getMockData';
 import { analyzeCode } from '@/lib/utils/analyzeCode';
-import { GraphData, ComponentNode, FileNode, StateVariable, RepoData } from '@/types';
+import { GraphData, ComponentNode, FileNode, StateVariable, RepoData, AnalysisMode, DeepDiveResult } from '@/types';
 import { ArrowLeft, Loader2, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from 'lucide-react';
 
 export default function Home() {
@@ -26,6 +29,28 @@ export default function Home() {
   const [repoName, setRepoName] = useState<string>('');
   const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(true);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(true);
+  const [rightPanelTab, setRightPanelTab] = useState<'code' | 'details' | 'insights'>('code');
+
+  // A repo URL that's been submitted but is waiting on a mode choice
+  // (Normal vs Deep-Dive) before the actual analysis request fires.
+  const [pendingRepo, setPendingRepo] = useState<{ url: string; token?: string } | null>(null);
+  const [deepDiveAvailable, setDeepDiveAvailable] = useState(false);
+  const [deepDiveResult, setDeepDiveResult] = useState<DeepDiveResult | null>(null);
+
+  // Ask the server whether Deep-Dive can be offered at all — this only ever
+  // returns a boolean, never the key itself.
+  useEffect(() => {
+    fetch('/api/analyze')
+      .then((r) => r.json())
+      .then((d) => setDeepDiveAvailable(Boolean(d.deepDiveAvailable)))
+      .catch(() => setDeepDiveAvailable(false));
+  }, []);
+
+  // The Details tab only makes sense while a graph node is selected — fall
+  // back to Code the moment selection is cleared (e.g. a plain file click).
+  useEffect(() => {
+    if (!selectedNode && rightPanelTab === 'details') setRightPanelTab('code');
+  }, [selectedNode, rightPanelTab]);
 
   // Reflow guard (WCAG 1.4.10): auto-collapse the fixed-width side panels on
   // narrow viewports so the layout never needs to scroll horizontally.
@@ -40,9 +65,10 @@ export default function Home() {
     return () => window.removeEventListener('resize', applyReflow);
   }, []);
 
-  const handleAnalyze = async (url: string, token?: string) => {
+  const runAnalysis = async (url: string, token: string | undefined, mode: AnalysisMode) => {
     setIsAnalyzing(true);
     setError(null);
+    setDeepDiveResult(null);
 
     try {
       // Check if demo mode
@@ -215,7 +241,7 @@ export const logout = () => api.post('/auth/logout', {});` },
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl: url, token }),
+        body: JSON.stringify({ repoUrl: url, token, mode }),
       });
 
       const data = await response.json();
@@ -233,6 +259,11 @@ export const logout = () => api.post('/auth/logout', {});` },
       const analysisResult = analyzeCode(repoData.files);
       setGraphData({ nodes: analysisResult.nodes, links: analysisResult.links });
       setStateVariables(analysisResult.stateVariables);
+
+      if (repoData.deepDive) {
+        setDeepDiveResult(repoData.deepDive);
+        setRightPanelTab('insights');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Analysis error:', err);
@@ -240,6 +271,26 @@ export const logout = () => api.post('/auth/logout', {});` },
       setIsAnalyzing(false);
     }
   };
+
+  // Landing page submit — demo mode skips the mode picker entirely (it's a
+  // fully client-side mock, so "which mode" is meaningless); a real repo
+  // URL is held pending until the user picks Normal or Deep-Dive.
+  const handleRepoSubmit = async (url: string, token?: string) => {
+    if (url.toLowerCase() === 'demo' || url.toLowerCase() === 'test') {
+      await runAnalysis(url, token, 'normal');
+      return;
+    }
+    setPendingRepo({ url, token });
+  };
+
+  const handleModeSelected = (mode: AnalysisMode) => {
+    if (!pendingRepo) return;
+    const { url, token } = pendingRepo;
+    setPendingRepo(null);
+    void runAnalysis(url, token, mode);
+  };
+
+  const handleModeCancel = () => setPendingRepo(null);
 
   const handleReset = () => {
     setGraphData(null);
@@ -251,6 +302,9 @@ export const logout = () => api.post('/auth/logout', {});` },
     setStateVariables([]);
     setFilteredNodeIds(null);
     setActiveFlow(null);
+    setPendingRepo(null);
+    setDeepDiveResult(null);
+    setRightPanelTab('code');
   };
 
   const handleFilter = (nodeIds: string[] | null) => {
@@ -276,14 +330,21 @@ export const logout = () => api.post('/auth/logout', {});` },
     }
   };
 
-  // Handle file click from tree
+  // Handle file click from tree — a plain file browse, distinct from
+  // selecting a graph node, so it clears any stale node/Details selection.
   const handleFileClick = (file: FileNode) => {
     setSelectedFile(file);
+    setSelectedNode(null);
   };
 
   // Close code viewer
   const handleCloseCodeViewer = () => {
     setSelectedFile(null);
+    setSelectedNode(null);
+  };
+
+  // Close the Details tab — return to Code without dropping the open file.
+  const handleCloseDetails = () => {
     setSelectedNode(null);
   };
 
@@ -318,9 +379,21 @@ export const logout = () => api.post('/auth/logout', {});` },
     );
   }
 
+  // A repo has been submitted — ask which mode before spending any quota.
+  if (pendingRepo) {
+    return (
+      <ModeSelector
+        repoLabel={pendingRepo.url}
+        deepDiveAvailable={deepDiveAvailable}
+        onSelect={handleModeSelected}
+        onCancel={handleModeCancel}
+      />
+    );
+  }
+
   // Show landing page if no data
   if (!graphData) {
-    return <LandingPage onSubmit={handleAnalyze} />;
+    return <LandingPage onSubmit={handleRepoSubmit} />;
   }
 
   // Show dashboard
@@ -417,14 +490,75 @@ export const logout = () => api.post('/auth/logout', {});` },
           )}
         </div>
 
-        {/* Right Sidebar - Resizable Code Viewer (Collapsible) */}
+        {/* Right Sidebar - Resizable Code Viewer / Node Details (Collapsible) */}
         {isCodeViewerOpen ? (
-          <CodeViewerPane
-            fileName={selectedFile?.name || null}
-            filePath={selectedFile?.path || null}
-            content={selectedFile?.content || null}
-            onClose={() => setIsCodeViewerOpen(false)}
-          />
+          <div className="h-full flex-shrink-0 flex flex-col">
+            {(selectedNode || deepDiveResult) && (
+              <div className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 bg-white/70 backdrop-blur-sm border-b border-l border-neon-cyan/20">
+                {selectedNode && (
+                  <>
+                    <button
+                      onClick={() => setRightPanelTab('code')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${rightPanelTab === 'code'
+                        ? 'bg-neon-cyan/15 text-neon-cyan'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                    >
+                      Code
+                    </button>
+                    <button
+                      onClick={() => setRightPanelTab('details')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${rightPanelTab === 'details'
+                        ? 'bg-neon-purple/15 text-neon-purple'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                    >
+                      Details
+                    </button>
+                  </>
+                )}
+                {deepDiveResult && (
+                  <button
+                    onClick={() => setRightPanelTab('insights')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${rightPanelTab === 'insights'
+                      ? 'bg-neon-purple/15 text-neon-purple'
+                      : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                  >
+                    Insights
+                  </button>
+                )}
+              </div>
+            )}
+
+            {rightPanelTab === 'insights' && deepDiveResult ? (
+              <div className="flex-1 min-h-0 w-[500px] border-l border-neon-cyan/20 bg-white/30">
+                <ArchitectureInsights
+                  patterns={deepDiveResult.patterns}
+                  onLocate={setHighlightedNodeId}
+                  assessment={deepDiveResult.assessment}
+                  workflow={deepDiveResult.workflow}
+                />
+              </div>
+            ) : rightPanelTab === 'details' && selectedNode ? (
+              <div className="flex-1 min-h-0 w-[500px] border-l border-neon-cyan/20 bg-white/30">
+                <ComponentDetail
+                  node={selectedNode}
+                  onClose={handleCloseDetails}
+                  fileContent={getFileContent(selectedNode)}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0">
+                <CodeViewerPane
+                  fileName={selectedFile?.name || null}
+                  filePath={selectedFile?.path || null}
+                  content={selectedFile?.content || null}
+                  onClose={() => setIsCodeViewerOpen(false)}
+                />
+              </div>
+            )}
+          </div>
         ) : (
           <div className="h-full flex-shrink-0 border-l border-neon-cyan/20 bg-black/5">
             <button

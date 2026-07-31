@@ -33,6 +33,8 @@ export interface RepoData {
     owner: string;
     repo: string;
     files: FileNode[];
+    /** Present only when the request was analysed in Deep-Dive Agentic mode. */
+    deepDive?: DeepDiveResult;
 }
 
 export interface StateVariable {
@@ -41,5 +43,67 @@ export interface StateVariable {
     sourceComponentId: string;
     sourceComponentName: string;
     consumers: string[]; // Component IDs that receive this as props
+}
+
+export type ArchitecturalPatternKind =
+    | 'prop-drilling'
+    | 'circular-dependency'
+    | 'god-component'
+    | 'orphaned-module'
+    | 'container-component'
+    | 'presentational-component'
+    | 'deep-hierarchy';
+
+export type ArchitecturalPatternSeverity = 'info' | 'warning';
+
+export interface ArchitecturalPattern {
+    kind: ArchitecturalPatternKind;
+    severity: ArchitecturalPatternSeverity;
+    /** Component node IDs implicated in this finding. */
+    nodeIds: string[];
+    description: string;
+}
+
+export type AnalysisMode = 'normal' | 'deep-dive';
+
+/** One subtree-exploration choice the agent made during Stage 2, and why. */
+export interface AgentDecision {
+    path: string;
+    reason: string;
+    accepted: boolean;
+    filesFetched?: number;
+}
+
+export interface StageError {
+    stage: string;
+    message: string;
+}
+
+export interface StageTiming {
+    stage: string;
+    durationMs: number;
+}
+
+/** Threaded through every stage of the agentic pipeline; serialized into the
+ * API response so context management is inspectable, not just asserted. */
+export interface WorkflowSummary {
+    mode: AnalysisMode;
+    fileBudget: number;
+    filesUsed: number;
+    decisions: AgentDecision[];
+    errors: StageError[];
+    stageTimings: StageTiming[];
+}
+
+export interface ArchitecturalAssessment {
+    summary: string;
+    strengths: string[];
+    concerns: string[];
+}
+
+export interface DeepDiveResult {
+    patterns: ArchitecturalPattern[];
+    assessment: ArchitecturalAssessment | null;
+    workflow: WorkflowSummary;
 }
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Search, X, ArrowRight } from 'lucide-react';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 
 interface ComponentSearchProps {
     nodes: { id: string; name: string }[];
@@ -9,10 +10,16 @@ interface ComponentSearchProps {
     selectedNodeId: string | null;
 }
 
+const MAX_SUGGESTIONS = 15;
+
 export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSearchProps) {
     const [query, setQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // The input stays instant; only the suggestion list is debounced, so
+    // filtering doesn't re-run on every keystroke of a large graph.
+    const debouncedQuery = useDebouncedValue(query, 250);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -25,16 +32,28 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const filteredNodes = useMemo(() => {
-        // Show all nodes when query is empty, otherwise filter
-        if (!query.trim()) {
-            return nodes.slice(0, 15); // Show up to 15 components when empty
-        }
-        const lowerQuery = query.toLowerCase();
-        return nodes.filter(node =>
-            node.name.toLowerCase().includes(lowerQuery)
-        ).slice(0, 15); // Limit suggestions
-    }, [nodes, query]);
+    const matchNodes = useCallback(
+        (search: string) => {
+            if (!search.trim()) {
+                return nodes.slice(0, MAX_SUGGESTIONS); // Show a sample when empty
+            }
+            const lowerQuery = search.toLowerCase();
+            return nodes
+                .filter(node => node.name.toLowerCase().includes(lowerQuery))
+                .slice(0, MAX_SUGGESTIONS);
+        },
+        [nodes]
+    );
+
+    // Dropdown contents lag by the debounce interval...
+    const filteredNodes = useMemo(
+        () => matchNodes(debouncedQuery),
+        [matchNodes, debouncedQuery]
+    );
+
+    // ...but applying must act on what the user has actually typed, otherwise
+    // hitting Enter right after typing would jump to a stale match.
+    const immediateMatches = useMemo(() => matchNodes(query), [matchNodes, query]);
 
     const handleSelect = (nodeId: string) => {
         onSelect(nodeId);
@@ -48,8 +67,8 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
     };
 
     const handleApply = () => {
-        if (filteredNodes.length > 0) {
-            handleSelect(filteredNodes[0].id);
+        if (immediateMatches.length > 0) {
+            handleSelect(immediateMatches[0].id);
         }
     };
 
@@ -83,7 +102,7 @@ export function ComponentSearch({ nodes, onSelect, selectedNodeId }: ComponentSe
                     <button
                         type="button"
                         onClick={handleApply}
-                        disabled={filteredNodes.length === 0}
+                        disabled={immediateMatches.length === 0}
                         className="text-neon-purple hover:text-neon-cyan disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
                         title="Go to component"
                         aria-label="Go to component"
