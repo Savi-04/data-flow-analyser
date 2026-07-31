@@ -1,6 +1,6 @@
 # React Repo X-Ray 🔮
 
-A stunning 3D visualization tool that transforms React repositories into interactive cyberpunk constellations.
+A 3D visualization tool that transforms React repositories into an interactive dependency graph, with an optional AI agent that explores the codebase and surfaces architectural patterns.
 
 ![React Repo X-Ray](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
@@ -8,10 +8,9 @@ A stunning 3D visualization tool that transforms React repositories into interac
 
 ## ✨ Features
 
-- 🌌 **3D Force-Directed Graph**: Visualize your codebase as a floating hologram in space
-- 🎨 **Cyberpunk Aesthetic**: Deep black backgrounds with neon purple/cyan accents
+- 🌌 **3D Force-Directed Graph**: Visualize your codebase as an interactive graph, on a light, WCAG-compliant UI
 - 🔍 **Smart Code Analysis**: Automatically detects components, hooks, and utilities
-- 💫 **Animated Particles**: Watch data flow through your dependency graph
+- 🧠 **Deep-Dive Agentic Insights (BETA)**: A Gemini-powered agent explores the repo under a file budget and detects architectural patterns (prop drilling, circular dependencies, god components, and more) — opt-in, off by default
 - 🪟 **Glassmorphism UI**: Translucent panels with blur effects throughout
 - 📊 **Interactive Details**: Click nodes to see code, stats, and metadata
 
@@ -34,27 +33,37 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
-### Optional: GitHub Token
+### Environment Variables
 
-For higher API rate limits, add a GitHub token:
+Both are optional — the app works fully without either. Create a `.env.local` (see `.env.example`):
 
 ```bash
-# Create .env.local
+# Raises the unauthenticated GitHub rate limit and allows analyzing private
+# repos you have access to. Create at https://github.com/settings/tokens
 GITHUB_TOKEN=your_github_token_here
+
+# Enables "Deep-Dive Agentic Insights" mode. Without it, Deep-Dive shows as
+# disabled and Normal mode is unaffected. Create at
+# https://aistudio.google.com/apikey. Server-side only — never sent to the
+# client or logged.
+GOOGLE_API_KEY=your_gemini_api_key_here
 ```
 
 ## 🎮 How to Use
 
 1. **Enter a GitHub URL** on the landing page (e.g., `facebook/react`)
-2. **Wait for analysis** - the tool fetches and analyzes all React files
-3. **Explore the 3D graph**:
+2. **Pick a mode**:
+   - **Normal** — instant, deterministic analysis, no API quota used
+   - **Deep-Dive Agentic Insights (BETA)** — a Gemini agent explores the repo under a file budget, then a deterministic pass detects architectural patterns and the model writes a summary. Requires `GOOGLE_API_KEY`.
+3. **Wait for analysis** - the tool fetches and analyzes React files
+4. **Explore the 3D graph**:
    - 🔵 Blue spheres = Components
    - 🔴 Red spheres = Hooks
    - 🟢 Green spheres = Utils
    - Larger spheres = More connections
-4. **Hover over nodes** to see tooltips
-5. **Click nodes** to view detailed information and code
-6. **Navigate** using mouse/trackpad to rotate and zoom
+5. **Hover over nodes** to see tooltips
+6. **Click nodes** to view detailed information and code — including an **Insights** tab in Deep-Dive mode, showing detected patterns, the model's assessment, and an expandable trace of the agent's exploration decisions
+7. **Navigate** using mouse/trackpad to rotate and zoom
 
 ## 🛠️ Tech Stack
 
@@ -63,6 +72,7 @@ GITHUB_TOKEN=your_github_token_here
 - **Styling**: Tailwind CSS
 - **3D Graphics**: React Three Fiber, React Three Drei, Three.js
 - **API**: Octokit (GitHub REST API)
+- **AI Agent**: Google Gemini (`@google/genai`), used only in Deep-Dive mode
 - **Icons**: Lucide React
 - **Syntax Highlighting**: react-syntax-highlighter
 
@@ -94,20 +104,24 @@ data-flow-analyser/
 
 ## 🎨 Design Philosophy
 
-The application follows a **Cyberpunk Void** aesthetic:
-
-- **Colors**: Deep black (#050505) with neon purple (#bf00ff) and cyan (#00f3ff)
-- **Effects**: Glassmorphism, glow effects, particle systems
-- **Typography**: Clean, modern fonts with text shadows
-- **Animations**: Smooth transitions and floating elements
+A light, accessible UI (WCAG 2.1 reflow-compliant, no horizontal scroll at any viewport width) with purple/cyan accents and glassmorphism panels — the 3D graph itself is the focal point, not the chrome around it.
 
 ## 🔧 How It Works
 
-1. **GitHub API Integration**: Fetches repository file tree using Octokit
+**Normal mode:**
+1. **GitHub API Integration**: Fetches repository file tree using Octokit, with retries on transient failures
 2. **Code Analysis**: Regex-based parsing to detect components, hooks, and dependencies
 3. **Graph Generation**: Builds nodes and links based on import/export relationships
 4. **Force-Directed Layout**: Positions nodes in 3D space using physics simulation
 5. **WebGL Rendering**: React Three Fiber renders the scene with animations
+
+**Deep-Dive mode adds:**
+1. **Shallow scan**: a cheap, depth-limited tree fetch
+2. **Agent-driven exploration**: Gemini receives the shallow tree and a `fetch_subtree` tool, and decides which directories are worth the remaining file budget — each decision and its reasoning is recorded and shown in the UI
+3. **Pattern detection**: deterministic graph algorithms (not LLM-guessed) find prop drilling, circular dependencies, god components, orphaned modules, and deep hierarchies
+4. **Synthesis**: the model returns a structured architectural assessment from the graph, state flow, and detected patterns
+
+A failure in the agent or synthesis stage degrades to the Normal-mode result rather than failing the whole request.
 
 ## 🌟 Example Repositories to Try
 

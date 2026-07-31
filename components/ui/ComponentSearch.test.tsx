@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ComponentSearch } from './ComponentSearch';
 
@@ -34,7 +34,7 @@ describe('ComponentSearch', () => {
         expect(screen.getByText('Footer')).toBeInTheDocument();
     });
 
-    it('filters nodes by search query', async () => {
+    it('filters nodes by search query (debounced)', async () => {
         const user = userEvent.setup();
         render(
             <ComponentSearch nodes={mockNodes} onSelect={vi.fn()} selectedNodeId={null} />
@@ -43,9 +43,27 @@ describe('ComponentSearch', () => {
         const input = screen.getByPlaceholderText('Search components...');
         await user.type(input, 'Head');
 
-        expect(screen.getByText('Header')).toBeInTheDocument();
-        // "App", "Footer", "Button" should not be visible in the dropdown
-        expect(screen.queryByRole('button', { name: 'App' })).not.toBeInTheDocument();
+        // Dropdown filtering is debounced (250ms) — wait for it to settle
+        // rather than asserting immediately after typing.
+        await waitFor(() => {
+            expect(screen.getByText('Header')).toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: 'App' })).not.toBeInTheDocument();
+        });
+    });
+
+    it('applying with Enter uses the immediate query, not the debounced one', async () => {
+        const mockOnSelect = vi.fn();
+        const user = userEvent.setup();
+        render(
+            <ComponentSearch nodes={mockNodes} onSelect={mockOnSelect} selectedNodeId={null} />
+        );
+
+        const input = screen.getByPlaceholderText('Search components...');
+        await user.type(input, 'Header');
+        await user.keyboard('{Enter}');
+
+        // Applies to the freshly-typed match without waiting for the debounce.
+        expect(mockOnSelect).toHaveBeenCalledWith('src/Header');
     });
 
     it('calls onSelect when a node is clicked', async () => {

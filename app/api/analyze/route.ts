@@ -1,99 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Octokit } from 'octokit';
-import { FileNode } from '@/types';
+import { FileNode, AnalysisMode } from '@/types';
 import { parseGitHubUrl } from '@/lib/utils/parseGitHubUrl';
+import { withRetry } from '@/lib/utils/withRetry';
+import { createOctokit, fetchFileTree, fetchContentsBatched } from '@/lib/utils/githubClient';
+import { checkRateLimit } from '@/lib/utils/rateLimit';
+import { runDeepDiveAnalysis } from '@/lib/agent/analyzeAgent';
 
 // Limits to prevent timeouts
 const MAX_FILES = 200;
 const MAX_DEPTH = 10;
 
-function createOctokit(token?: string) {
-    return new Octokit({
-        auth: token || process.env.GITHUB_TOKEN,
-    });
-}
+// Deep-Dive spends real Gemini quota per request — cap how often one caller can trigger it.
+const DEEP_DIVE_RATE_LIMIT = 5;
+const DEEP_DIVE_RATE_WINDOW_MS = 60_000;
 
-async function fetchFileTree(
-    octokit: Octokit,
-    owner: string,
-    repo: string,
-    fileCount: { count: number },
-    ref?: string,
-    path: string = '',
-    depth: number = 0
-): Promise<FileNode[]> {
-    if (depth >= MAX_DEPTH || fileCount.count >= MAX_FILES) {
-        return [];
-    }
-
-    try {
-        const params: any = { owner, repo, path };
-        if (ref) params.ref = ref;
-
-        const { data } = await octokit.rest.repos.getContent(params);
-
-        if (!Array.isArray(data)) {
-            return [];
-        }
-
-        const files: FileNode[] = [];
-        const validExtensions = ['.js', '.jsx', '.ts', '.tsx'];
-        const ignorePaths = ['node_modules', 'test', 'tests', '__tests__', 'dist', 'build', '.next', '.git', 'public', 'assets'];
-
-        for (const item of data) {
-            if (fileCount.count >= MAX_FILES) break;
-
-            if (ignorePaths.some(ignore => item.path.includes(ignore)) || item.name.startsWith('.')) {
-                continue;
-            }
-
-            if (item.type === 'file') {
-                if (validExtensions.some(ext => item.name.endsWith(ext))) {
-                    files.push({ path: item.path, name: item.name, type: 'file' });
-                    fileCount.count++;
-                }
-            } else if (item.type === 'dir') {
-                const subFiles = await fetchFileTree(octokit, owner, repo, fileCount, ref, item.path, depth + 1);
-                files.push(...subFiles);
-            }
-        }
-
-        return files;
-    } catch (error: any) {
-        console.error(`Error fetching file tree for ${path}:`, error?.message || error);
-        return [];
-    }
-}
-
-async function fetchFileContent(
-    octokit: Octokit,
-    owner: string,
-    repo: string,
-    path: string,
-    ref?: string
-): Promise<string> {
-    try {
-        const params: any = { owner, repo, path };
-        if (ref) params.ref = ref;
-
-        const { data } = await octokit.rest.repos.getContent(params);
-
-        if ('content' in data && data.content) {
-            return Buffer.from(data.content, 'base64').toString('utf-8');
-        }
-
-        return '';
-    } catch (error: any) {
-        console.error(`Error fetching content for ${path}:`, error?.message || error);
-        return '';
-    }
+/** Lets the client know whether Deep-Dive mode can be offered, without ever exposing the key itself. */
+export async function GET() {
+    return NextResponse.json({ deepDiveAvailable: Boolean(process.env.GOOGLE_API_KEY) });
 }
 
 export async function POST(request: NextRequest) {
     try {
-        const { repoUrl, token } = await request.json();
+        const { repoUrl, token, mode: rawMode } = await request.json();
+        const mode: AnalysisMode = rawMode === 'deep-dive' ? 'deep-dive' : 'normal';
 
-        console.log('Fetching repo data for:', repoUrl);
+        console.log('Fetching repo data for:', repoUrl, `(mode: ${mode})`);
+
+        if (mode === 'deep-dive') {
+            if (!process.env.GOOGLE_API_KEY) {
+                return NextResponse.json(
+                    { error: 'Deep-Dive Agentic Insights is not configured on this server (missing GOOGLE_API_KEY).' },
+                    { status: 400 }
+                );
+            }
+
+            const clientKey = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown';
+            const { limited, retryAfterSeconds } = checkRateLimit(clientKey, DEEP_DIVE_RATE_LIMIT, DEEP_DIVE_RATE_WINDOW_MS);
+            if (limited) {
+                return NextResponse.json(
+                    { error: 'Too many Deep-Dive requests. Please wait before trying again.' },
+                    { status: 429, headers: retryAfterSeconds ? { 'retry-after': String(retryAfterSeconds) } : undefined }
+                );
+            }
+        }
 
         const octokit = createOctokit(token);
         const parsed = parseGitHubUrl(repoUrl);
@@ -108,9 +57,14 @@ export async function POST(request: NextRequest) {
         const { owner, repo, ref, path } = parsed;
         console.log(`Parsed: ${owner}/${repo} (ref: ${ref}, path: ${path})`);
 
-        // Verify repository exists
+        // Verify repository exists. A rate-limited 403 is retried; 404 fails fast.
         try {
-            await octokit.rest.repos.get({ owner, repo });
+            await withRetry(() => octokit.rest.repos.get({ owner, repo }), {
+                onRetry: ({ attempt, maxAttempts, delayMs, reason }) =>
+                    console.warn(
+                        `[retry ${attempt}/${maxAttempts}] repo lookup ${owner}/${repo} — ${reason}; waiting ${delayMs}ms`
+                    ),
+            });
         } catch (error: any) {
             if (error?.status === 404) {
                 return NextResponse.json(
@@ -129,8 +83,47 @@ export async function POST(request: NextRequest) {
 
         console.log('Repository found, fetching files...');
 
+        if (mode === 'deep-dive') {
+            const result = await runDeepDiveAnalysis({
+                octokit,
+                owner,
+                repo,
+                ref,
+                rootPath: path || '',
+                fileBudget: MAX_FILES,
+            });
+
+            if (result.files.length === 0) {
+                return NextResponse.json(
+                    { error: `No React files found in ${path || 'root'}. Make sure it contains .js, .jsx, .ts, or .tsx files.` },
+                    { status: 404 }
+                );
+            }
+
+            return NextResponse.json({
+                owner,
+                repo,
+                files: result.files,
+                deepDive: {
+                    patterns: result.patterns,
+                    assessment: result.assessment,
+                    workflow: result.workflow,
+                },
+            });
+        }
+
+        // Normal mode — unchanged from the original single-pass traversal.
         const fileCount = { count: 0 };
-        const files = await fetchFileTree(octokit, owner, repo, fileCount, ref, path || '', 0);
+        const files = await fetchFileTree(
+            octokit,
+            owner,
+            repo,
+            fileCount,
+            { maxFiles: MAX_FILES, maxDepth: MAX_DEPTH },
+            ref,
+            path || '',
+            0
+        );
 
         if (files.length === 0) {
             return NextResponse.json(
@@ -141,20 +134,7 @@ export async function POST(request: NextRequest) {
 
         console.log(`Found ${files.length} files, fetching content...`);
 
-        // Fetch content in batches
-        const batchSize = 10;
-        const filesWithContent: FileNode[] = [];
-
-        for (let i = 0; i < files.length; i += batchSize) {
-            const batch = files.slice(i, i + batchSize);
-            const batchResults = await Promise.all(
-                batch.map(async (file) => {
-                    const content = await fetchFileContent(octokit, owner, repo, file.path, ref);
-                    return { ...file, content };
-                })
-            );
-            filesWithContent.push(...batchResults);
-        }
+        const filesWithContent: FileNode[] = await fetchContentsBatched(octokit, owner, repo, files, ref);
 
         console.log('Successfully fetched all file content');
 

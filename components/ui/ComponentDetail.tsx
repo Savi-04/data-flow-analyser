@@ -3,7 +3,7 @@
 import { ComponentNode } from '@/types';
 import { X, Code2, Zap, Box } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface ComponentDetailProps {
     node: ComponentNode | null;
@@ -62,11 +62,11 @@ export function ComponentDetail({ node, onClose, fileContent }: ComponentDetailP
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="glass-cyan p-4 rounded-lg">
-                    <p className="text-gray-400 text-sm">Connections</p>
+                    <p className="text-gray-600 text-sm">Connections</p>
                     <p className="text-neon-cyan text-2xl font-bold">{node.complexity}</p>
                 </div>
                 <div className="glass-cyan p-4 rounded-lg">
-                    <p className="text-gray-400 text-sm">Exports</p>
+                    <p className="text-gray-600 text-sm">Exports</p>
                     <p className="text-neon-cyan text-2xl font-bold">{node.exports.length}</p>
                 </div>
             </div>
@@ -91,7 +91,7 @@ export function ComponentDetail({ node, onClose, fileContent }: ComponentDetailP
                         </span>
                     )}
                     {!node.usesState && !node.usesEffect && !node.usesProps && (
-                        <span className="text-gray-500 text-sm">No special features detected</span>
+                        <span className="text-gray-600 text-sm">No special features detected</span>
                     )}
                 </div>
             </div>
@@ -99,7 +99,7 @@ export function ComponentDetail({ node, onClose, fileContent }: ComponentDetailP
             {/* File Path */}
             <div className="mb-6">
                 <h3 className="text-neon-purple font-semibold mb-2">File Path</h3>
-                <code className="text-gray-400 text-sm bg-black/50 px-3 py-2 rounded block">
+                <code className="text-gray-700 text-sm bg-black/5 px-3 py-2 rounded block">
                     {node.filePath}
                 </code>
             </div>
@@ -128,11 +128,11 @@ export function ComponentDetail({ node, onClose, fileContent }: ComponentDetailP
                     <div className="rounded-lg overflow-hidden border border-neon-purple/20">
                         <SyntaxHighlighter
                             language="typescript"
-                            style={vscDarkPlus}
+                            style={vs}
                             customStyle={{
                                 margin: 0,
                                 padding: '1rem',
-                                background: 'rgba(0, 0, 0, 0.5)',
+                                background: 'transparent',
                                 fontSize: '0.875rem',
                             }}
                             showLineNumbers
