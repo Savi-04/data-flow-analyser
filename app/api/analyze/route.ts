@@ -5,6 +5,7 @@ import { withRetry } from '@/lib/utils/withRetry';
 import { createOctokit, fetchFileTree, fetchContentsBatched } from '@/lib/utils/githubClient';
 import { checkRateLimit } from '@/lib/utils/rateLimit';
 import { runDeepDiveAnalysis } from '@/lib/agent/analyzeAgent';
+import { safeErrorMessage, redactSecrets } from '@/lib/utils/sanitize';
 
 // Limits to prevent timeouts
 const MAX_FILES = 200;
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
         const { repoUrl, token, mode: rawMode } = await request.json();
         const mode: AnalysisMode = rawMode === 'deep-dive' ? 'deep-dive' : 'normal';
 
-        console.log('Fetching repo data for:', repoUrl, `(mode: ${mode})`);
+        console.log('Fetching repo data for:', redactSecrets(String(repoUrl ?? '')), `(mode: ${mode})`);
 
         if (mode === 'deep-dive') {
             if (!process.env.GOOGLE_API_KEY) {
@@ -59,12 +60,25 @@ export async function POST(request: NextRequest) {
 
         // Verify repository exists. A rate-limited 403 is retried; 404 fails fast.
         try {
-            await withRetry(() => octokit.rest.repos.get({ owner, repo }), {
+            const { data: repoMeta } = await withRetry(() => octokit.rest.repos.get({ owner, repo }), {
                 onRetry: ({ attempt, maxAttempts, delayMs, reason }) =>
                     console.warn(
                         `[retry ${attempt}/${maxAttempts}] repo lookup ${owner}/${repo} — ${reason}; waiting ${delayMs}ms`
                     ),
             });
+
+            // The server's GITHUB_TOKEN exists to raise the API rate limit, not
+            // to lend its read access to callers. Without it an anonymous
+            // request could reach any private repository that token can see, so
+            // a private repo requires the caller's own token.
+            if (repoMeta.private && !token) {
+                return NextResponse.json(
+                    {
+                        error: `Repository ${owner}/${repo} is private. Add your own GitHub Personal Access Token to analyse it.`,
+                    },
+                    { status: 403 }
+                );
+            }
         } catch (error: any) {
             if (error?.status === 404) {
                 return NextResponse.json(
@@ -107,6 +121,8 @@ export async function POST(request: NextRequest) {
                 deepDive: {
                     patterns: result.patterns,
                     assessment: result.assessment,
+                    triage: result.triage,
+                    clusters: result.clusters,
                     workflow: result.workflow,
                 },
             });
@@ -144,10 +160,10 @@ export async function POST(request: NextRequest) {
             files: filesWithContent,
         });
     } catch (error: any) {
-        console.error('Error fetching repo data:', error?.message || error);
-        return NextResponse.json(
-            { error: error?.message || 'An unexpected error occurred' },
-            { status: 500 }
-        );
+        // Both the log and the client-facing body are scrubbed: an upstream
+        // message could otherwise carry a token or a "?key=" query string.
+        const message = safeErrorMessage(error);
+        console.error('Error fetching repo data:', message);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

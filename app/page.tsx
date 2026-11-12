@@ -538,6 +538,8 @@ export const logout = () => api.post('/auth/logout', {});` },
                   onLocate={setHighlightedNodeId}
                   assessment={deepDiveResult.assessment}
                   workflow={deepDiveResult.workflow}
+                  triage={deepDiveResult.triage}
+                  clusters={deepDiveResult.clusters}
                 />
               </div>
             ) : rightPanelTab === 'details' && selectedNode ? (

@@ -1,4 +1,5 @@
 import { AgentDecision, AnalysisMode, StageError, StageTiming, WorkflowSummary } from '@/types';
+import { safeErrorMessage } from '@/lib/utils/sanitize';
 
 /**
  * A single object threaded through every stage of the Deep-Dive pipeline.
@@ -44,9 +45,12 @@ export class WorkflowContext {
     }
 
     recordError(stage: string, error: unknown): void {
+        // summary() is serialized straight into the API response and rendered
+        // in the browser, so this is a trust boundary: scrub credentials out of
+        // the message before it is ever stored.
         this.errors.push({
             stage,
-            message: error instanceof Error ? error.message : String(error),
+            message: safeErrorMessage(error, 'Stage failed'),
         });
     }
 

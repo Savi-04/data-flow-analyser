@@ -1,6 +1,7 @@
 import { Octokit } from 'octokit';
 import { FileNode } from '@/types';
 import { withRetry } from './withRetry';
+import { redactSecrets } from './sanitize';
 
 const VALID_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx'];
 const IGNORE_PATHS = ['node_modules', 'test', 'tests', '__tests__', 'dist', 'build', '.next', '.git', 'public', 'assets'];
@@ -83,7 +84,7 @@ async function fetchFileTreeViaContents(
 
         return files;
     } catch (error: any) {
-        console.error(`Error fetching file tree for ${path}:`, error?.message || error);
+        console.error(`Error fetching file tree for ${path}:`, redactSecrets(String(error?.message || error)));
         return [];
     }
 }
@@ -270,7 +271,7 @@ export async function fetchFileContent(
 
         return '';
     } catch (error: any) {
-        console.error(`Error fetching content for ${path}:`, error?.message || error);
+        console.error(`Error fetching content for ${path}:`, redactSecrets(String(error?.message || error)));
         return '';
     }
 }

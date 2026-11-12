@@ -101,9 +101,53 @@ export interface ArchitecturalAssessment {
     concerns: string[];
 }
 
+/**
+ * The model's judgement on one deterministic finding. It may only reference
+ * findings by their index in the source array and re-order or dismiss them —
+ * it never authors a finding, so the detector stays the single source of truth.
+ */
+export interface PatternTriage {
+    /** Index into the `patterns` array this triage was computed from. */
+    index: number;
+    /** 1 = most worth acting on. */
+    rank: number;
+    /** Why this matters for this codebase specifically. */
+    note: string;
+}
+
+export interface DismissedPattern {
+    index: number;
+    /** Why this is noise rather than a real problem here. */
+    note: string;
+}
+
+/** Output of the triage stage. Indices are validated against the source array. */
+export interface TriageResult {
+    significant: PatternTriage[];
+    dismissed: DismissedPattern[];
+}
+
+/**
+ * A group of components the model judged to serve one purpose. Grouping is
+ * the judgement call here (real features cross directory boundaries), but
+ * every nodeId is validated against the graph, so a cluster can never point
+ * at a component that does not exist.
+ */
+export interface SemanticCluster {
+    /** Short human label, e.g. "Authentication flow". */
+    label: string;
+    /** One sentence on what this group does. */
+    purpose: string;
+    nodeIds: string[];
+}
+
 export interface DeepDiveResult {
     patterns: ArchitecturalPattern[];
     assessment: ArchitecturalAssessment | null;
+    /** Null when the triage stage failed or degraded. */
+    triage: TriageResult | null;
+    /** Empty when the clustering stage failed or found nothing coherent. */
+    clusters: SemanticCluster[];
     workflow: WorkflowSummary;
 }
 

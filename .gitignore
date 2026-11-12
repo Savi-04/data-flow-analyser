@@ -40,3 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# editor / agent workspace
+.claude/
+
+# local-only live smoke test: reads .env.local and makes real, billable API
+# calls, so it must never run in CI or be committed
+lib/agent/liveSmoke.test.ts
+probe-*.mjs
